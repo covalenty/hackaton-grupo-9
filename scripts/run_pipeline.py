@@ -20,6 +20,14 @@ import sys
 import time
 from pathlib import Path
 
+# Force UTF-8 on stdout/stderr so PT-BR (Patrícia, é, ç) doesn't get mangled
+# when redirected to log files on Windows.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except Exception:  # noqa: BLE001
+    pass
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
@@ -51,6 +59,13 @@ def main() -> int:
     p.add_argument("--profile", default="fixtures/profiles/wagno.yaml", help="Buyer profile YAML")
     p.add_argument("--no-extract", action="store_true", help="Stage 1 only — print payloads, no LLM")
     p.add_argument("--no-bq", action="store_true", help="Skip Stage 3+4 (silver write + comparison)")
+    p.add_argument("--no-deliver", action="store_true", help="Skip Stage 5 (alert delivery)")
+    p.add_argument(
+        "--send-url",
+        default=None,
+        help="POST endpoint for sending WhatsApp alerts (HTTPSender). "
+             "Falls back to LogSender when omitted.",
+    )
     p.add_argument("--limit", type=int, default=0, help="Stop after N messages (0 = forever)")
     args = p.parse_args()
 
@@ -78,6 +93,20 @@ def main() -> int:
         except Exception as e:  # noqa: BLE001
             print(f"[pipeline] BQ unavailable ({e!r}) — running without stages 3/4")
             bq_client = None
+
+    # Stage 5 setup — alert delivery. Works even without BQ (we'll still
+    # log the offer; once Stage 4 is plugged we get full alerts with economy.)
+    deliver_fn = None
+    sender = None
+    if not args.no_deliver and buyer is not None:
+        from agent.deliver.sender import HTTPSender, LogSender
+        from agent.pipeline.stage_05_deliver import deliver as deliver_fn  # noqa: F811
+        if args.send_url:
+            sender = HTTPSender(args.send_url)
+            print(f"[pipeline] sender: HTTPSender → {args.send_url}")
+        else:
+            sender = LogSender()
+            print(f"[pipeline] sender: LogSender (runs/alerts.jsonl)")
 
     stream = iter_sse(args.base) if args.mode == "sse" else poll(args.base, interval=args.interval)
     processed = 0
@@ -109,11 +138,22 @@ def main() -> int:
                     continue
                 try:
                     row = stage_03.run(offer.model_dump(), bq_client)
-                    if row and row.get("match_status") == "matched":
-                        comps = stage_04.run(offer.message_id, bq_client)
-                        urgent = [c for c in (comps or []) if c.get("urgency_class") == "urgent"]
-                        for c in urgent:
-                            print(f"    🚨 urgent · economia R$ {c.get('economy_unit_brl'):.2f}/un")
+                    if not row or row.get("match_status") != "matched":
+                        continue
+                    comps = stage_04.run(offer.message_id, bq_client) or []
+                    for comp in comps:
+                        if deliver_fn and buyer:
+                            score = deliver_fn(
+                                offer=offer,
+                                comparison=comp,
+                                buyer=buyer,
+                                canonical_name=row.get("canonical_name"),
+                                therapeutic_category=row.get("therapeutic_category"),
+                                rep_name=msg.source_name,
+                                sender=sender,
+                            )
+                            if score.band.value in ("urgent", "high"):
+                                print(f"    ✓ alerted · {score.band.value} · score={score.score}")
                 except Exception as e:  # noqa: BLE001
                     print(f"  [bq error] {e!r}")
 
