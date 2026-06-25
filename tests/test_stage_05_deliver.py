@@ -169,7 +169,11 @@ def test_deliver_cienty_better_when_rep_pricier():
     text = sender.calls[0]["text"]
     assert "Cienty" in text
     assert "mais barato" in text
-    assert "Comprar pela Cienty" in text
+    assert "Comprar na Cienty" in text
+    # clickable product link with the EAN + tracking params
+    assert "/produto/7891234567890" in text
+    assert "utm_source=whatsapp" in text
+    assert "utm_medium=cienty-better-alert" in text
 
 
 def test_deliver_no_cienty_better_alert_without_buyer_signal():

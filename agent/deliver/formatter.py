@@ -4,15 +4,32 @@ Design principles:
   - Lead with the benefit (R$ economy + %). That's the headline.
   - Two-price comparison in compact lines.
   - One CTA at the bottom, action-oriented.
-  - Total length: ~6 lines. Fits on a phone screen without scrolling.
+  - On CIENTY_BETTER: include a clickable product link with UTM tracking,
+    so a click on the Zap closes the loop straight into platform GMV.
 
-WhatsApp markdown that survives: *bold*, _italic_.
+WhatsApp markdown that survives: *bold*, _italic_. Plain URLs auto-link.
 """
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from ..schemas import ExtractedOffer, RelevanceBand, RelevanceScore
+
+
+# Configurable via env so prod can point to the real Cienty domain without
+# touching code. Default works for hackathon demo.
+CIENTY_PRODUCT_URL_BASE = os.getenv("CIENTY_PRODUCT_URL_BASE", "https://app.cienty.com.br")
+
+
+def _product_url(ean: Optional[str], message_id: Optional[str]) -> Optional[str]:
+    """Build a deep-link to the product page with attribution params."""
+    if not ean:
+        return None
+    qs = "utm_source=whatsapp&utm_medium=cienty-better-alert"
+    if message_id:
+        qs += f"&alert_id={message_id}"
+    return f"{CIENTY_PRODUCT_URL_BASE}/produto/{ean}?{qs}"
 
 
 def _fmt_brl(value: Optional[float]) -> str:
@@ -90,8 +107,9 @@ def _format_cienty_better(
     economy_unit_brl: Optional[float],
     economy_pct: Optional[float],
     rep_name: Optional[str],
+    ean: Optional[str],
 ) -> str:
-    """CIENTY_BETTER — rep is pricier. Lead with the Cienty advantage + CTA to buy here."""
+    """CIENTY_BETTER — rep is pricier. Lead with the Cienty advantage + clickable CTA."""
     product = canonical_name or offer.product_name_raw
     gap = abs(economy_unit_brl) if economy_unit_brl is not None else None
     lines: list[str] = []
@@ -112,8 +130,13 @@ def _format_cienty_better(
     if price_cienty_brl is not None:
         lines.append(f"Cienty: {_fmt_brl(price_cienty_brl)}/un")
 
+    url = _product_url(ean, offer.message_id)
     lines.append("")
-    lines.append("👉 Comprar pela Cienty")
+    if url:
+        lines.append("👉 *Comprar na Cienty:*")
+        lines.append(url)
+    else:
+        lines.append("👉 Comprar pela Cienty")
     return "\n".join(lines)
 
 
@@ -141,6 +164,7 @@ def format_alert(
             economy_unit_brl=economy_unit_brl,
             economy_pct=economy_pct,
             rep_name=rep_name,
+            ean=relevance.ean_matched,
         )
     return _format_rep_cheaper(
         offer=offer,
