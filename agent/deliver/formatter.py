@@ -17,29 +17,40 @@ from typing import Optional
 from ..schemas import ExtractedOffer, RelevanceBand, RelevanceScore
 
 
-# Configurable via env so prod can point to the real Cienty domain without
-# touching code. Default works for hackathon demo.
-CIENTY_PRODUCT_URL_BASE = os.getenv("CIENTY_PRODUCT_URL_BASE", "https://app.cienty.com.br")
+# Cienty search base — configurable via env. Default = production.
+CIENTY_SEARCH_URL_BASE = os.getenv("CIENTY_SEARCH_URL_BASE", "https://busca.cienty.com.br")
 
 
-def _product_url(
+def _cienty_search_url(
     ean: Optional[str],
     message_id: Optional[str],
     *,
     medium: str = "cienty-better-alert",
 ) -> Optional[str]:
-    """Build a deep-link to the product page with attribution params.
+    """Build a deep-link to the Cienty search results filtered by EAN.
 
-    `medium` distinguishes the alert context in analytics:
-      - cienty-better-alert: rep was pricier; CTA is buy-on-Cienty
-      - verify-link:         rep was cheaper; CTA is confirm-cienty-price
+    `medium` distinguishes the alert context in analytics. Currently only
+    used by CIENTY_BETTER ('cienty-better-alert'); URGENT/HIGH alerts link
+    to the rep's WhatsApp instead, not back to Cienty.
     """
     if not ean:
         return None
     qs = f"utm_source=whatsapp&utm_medium={medium}"
     if message_id:
         qs += f"&alert_id={message_id}"
-    return f"{CIENTY_PRODUCT_URL_BASE}/produto/{ean}?{qs}"
+    return f"{CIENTY_SEARCH_URL_BASE}/results?term={ean}&{qs}"
+
+
+def _rep_chat_url(rep_phone: Optional[str]) -> Optional[str]:
+    """Build a wa.me link to open the rep's WhatsApp chat directly.
+
+    wa.me expects digits only (no '+', no JID suffix). Returns None when the
+    phone is missing (e.g. group messages where source_phone wasn't captured).
+    """
+    if not rep_phone:
+        return None
+    digits = "".join(ch for ch in rep_phone if ch.isdigit())
+    return f"https://wa.me/{digits}" if digits else None
 
 
 def _fmt_brl(value: Optional[float]) -> str:
@@ -78,12 +89,12 @@ def _format_rep_cheaper(
     economy_unit_brl: Optional[float],
     economy_pct: Optional[float],
     rep_name: Optional[str],
-    ean: Optional[str],
 ) -> str:
     """URGENT/HIGH — rep is cheaper than Cienty. Lead with economy + CTA to act.
 
-    Includes a verify link to the Cienty product page so the buyer can
-    confirm the comparison themselves. Builds trust over time.
+    CTA links straight to the rep's WhatsApp chat (wa.me) so the buyer is
+    one tap away from closing the deal. We don't pretend the buy is on Cienty
+    in this case — the buy is with the rep, so the link goes there.
     """
     product = canonical_name or offer.product_name_raw
     lines: list[str] = []
@@ -110,12 +121,12 @@ def _format_rep_cheaper(
 
     lines.append("")
     cta_rep = rep_name or "o rep"
-    lines.append(f"👉 Vale fechar com {cta_rep}")
-
-    verify_url = _product_url(ean, offer.message_id, medium="verify-link")
-    if verify_url:
-        lines.append("")
-        lines.append(f"_Conferir preço Cienty:_ {verify_url}")
+    chat_url = _rep_chat_url(offer.source_phone)
+    if chat_url:
+        lines.append(f"👉 *Fechar com {cta_rep}:*")
+        lines.append(chat_url)
+    else:
+        lines.append(f"👉 Vale fechar com {cta_rep}")
 
     return "\n".join(lines)
 
@@ -151,7 +162,7 @@ def _format_cienty_better(
     if price_cienty_brl is not None:
         lines.append(f"Cienty: {_fmt_brl(price_cienty_brl)}/un")
 
-    url = _product_url(ean, offer.message_id)
+    url = _cienty_search_url(ean, offer.message_id, medium="cienty-better-alert")
     lines.append("")
     if url:
         lines.append("👉 *Comprar na Cienty:*")
@@ -194,5 +205,4 @@ def format_alert(
         economy_unit_brl=economy_unit_brl,
         economy_pct=economy_pct,
         rep_name=rep_name,
-        ean=relevance.ean_matched,
     )

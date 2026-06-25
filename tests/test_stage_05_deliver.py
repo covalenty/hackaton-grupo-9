@@ -85,11 +85,11 @@ def test_formatter_brl_and_economy():
     assert "R$ 52,90" in text
     assert "R$ 7,74" in text
     assert "15%" in text
-    assert "Vale fechar com Eduardo MILFARMA" in text  # primary CTA
-    # verify link (trust)
-    assert "Conferir preço Cienty" in text
-    assert "/produto/7891234567890" in text
-    assert "utm_medium=verify-link" in text
+    assert "Fechar com Eduardo MILFARMA" in text  # CTA
+    # CTA links straight to the rep's WhatsApp chat
+    assert "https://wa.me/" in text
+    # URGENT/HIGH must NOT push Cienty (sale is happening with the rep)
+    assert "busca.cienty.com.br" not in text
 
 
 def test_deliver_alerts_on_high_relevance():
@@ -174,8 +174,8 @@ def test_deliver_cienty_better_when_rep_pricier():
     assert "Cienty" in text
     assert "mais barato" in text
     assert "Comprar na Cienty" in text
-    # clickable product link with the EAN + tracking params
-    assert "/produto/7891234567890" in text
+    # search-results link with EAN + tracking params
+    assert "busca.cienty.com.br/results?term=7891234567890" in text
     assert "utm_source=whatsapp" in text
     assert "utm_medium=cienty-better-alert" in text
 
