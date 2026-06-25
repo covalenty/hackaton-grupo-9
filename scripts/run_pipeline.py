@@ -85,10 +85,12 @@ def main() -> int:
     stage_03 = stage_04 = None
     if not args.no_bq:
         try:
+            import os
             from google.cloud import bigquery
             from agent.pipeline import stage_03_normalize as stage_03  # noqa: F811
             from agent.pipeline import stage_04_compare as stage_04  # noqa: F811
-            bq_client = bigquery.Client()
+            project = os.getenv("GOOGLE_CLOUD_PROJECT", "cienty-data-platform")
+            bq_client = bigquery.Client(project=project)
             print(f"[pipeline] BQ client ok · project={bq_client.project}")
         except Exception as e:  # noqa: BLE001
             print(f"[pipeline] BQ unavailable ({e!r}) — running without stages 3/4")
