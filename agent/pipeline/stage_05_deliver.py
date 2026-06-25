@@ -67,10 +67,13 @@ def deliver(
         return score
 
     if not to_phone:
-        # Use first phone in profile as default destination
-        if buyer.profile.source_phones:
-            to_phone = buyer.profile.source_phones[0]
-        else:
+        # Prefer the explicit destination (alert phone); fall back to the
+        # buyer's WhatsApp source as last resort (self-chat hackathon mode).
+        to_phone = (
+            buyer.profile.alert_destination_phone
+            or (buyer.profile.source_phones[0] if buyer.profile.source_phones else None)
+        )
+        if not to_phone:
             print("[deliver] no destination phone configured — skipping send")
             return score
 

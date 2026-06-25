@@ -13,7 +13,10 @@ profile:
     - "02.578.461/0001-71"   # Farmaestra · Drogaria Rondon de Campinas
     - "08.731.088/0001-23"   # Farmaestra · Drogaria The Mall
   source_phones:
-    - "+5519988008998"        # número Cienty dedicado pro Wagno
+    - "+5519988008998"        # número Cienty dedicado pro Wagno (recebe ofertas)
+  # Pro hackathon, alerta volta no MESMO número Cienty (self-chat).
+  # Em prod, trocar pelo celular pessoal do Wagno.
+  alert_destination_phone: "+5519988008998"
   buyer_name_aliases:
     - "WAGNO"
     - "C Cienty"

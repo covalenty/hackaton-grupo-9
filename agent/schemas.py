@@ -104,7 +104,15 @@ class BuyerProfile(BaseModel):
     buyer_id: str = Field(..., description="Stable internal id, e.g. 'farmaestra'")
     display_name: str
     cnpjs: list[str] = Field(default_factory=list, description="All CNPJs operated by this buyer")
-    source_phones: list[str] = Field(default_factory=list, description="Phones the buyer uses on WhatsApp")
+    source_phones: list[str] = Field(
+        default_factory=list,
+        description="Phones the buyer SENDS FROM (used to detect is_from_buyer in incoming msgs).",
+    )
+    alert_destination_phone: Optional[str] = Field(
+        None,
+        description="Phone to RECEIVE alerts. For hackathon = same Cienty number "
+                    "(self-chat demo). Production = the buyer's personal phone.",
+    )
     buyer_name_aliases: list[str] = Field(
         default_factory=list,
         description="Names that appear as sender when this buyer is talking (e.g. 'WAGNO', 'C Cienty')",

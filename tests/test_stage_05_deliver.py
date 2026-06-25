@@ -39,6 +39,7 @@ def _wagno_context_with_history(ean: str, qty: int = 240) -> BuyerContext:
         display_name="Wagno · Farmaestra",
         cnpjs=["04.796.409/0001-17"],
         source_phones=["+5519988008998"],
+        alert_destination_phone="+5519988008998",  # hackathon: self-chat
         buyer_name_aliases=["WAGNO"],
     )
     history = BuyerHistoryFeatures(
