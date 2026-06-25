@@ -1,0 +1,32 @@
+# Buyer profile: Wagno @ Farmaestra
+#
+# Esses CNPJs vêm da Miriam — coloca os reais aqui antes de rodar contra BQ.
+# O `history` está vazio porque vamos carregar via BQ; se quiser rodar relevance
+# offline (sem BQ), preencher manualmente com top_eans e top_categories.
+
+profile:
+  buyer_id: farmaestra
+  display_name: "Wagno · Farmaestra"
+  cnpjs:
+    # 3 lojas do grupo Farmaestra (Campinas)
+    - "04.796.409/0001-17"   # Drogaria Dom Pedro de Campinas
+    - "02.578.461/0001-71"   # Farmaestra · Drogaria Rondon de Campinas
+    - "08.731.088/0001-23"   # Farmaestra · Drogaria The Mall
+  source_phones:
+    - "+5519988008998"        # número Cienty dedicado pro Wagno
+  buyer_name_aliases:
+    - "WAGNO"
+    - "C Cienty"
+    - "C Comprador"
+
+# Para rodar relevance sem BQ, descomente e popule manualmente:
+# history:
+#   top_eans:
+#     "7891234567890": 240   # Dipirona 500mg
+#     "7891234567891": 120   # Losartana 50mg EMS
+#   top_categories:
+#     "ANALGESICO": 600
+#     "ANTIHIPERTENSIVO": 400
+#   monthly_gmv_brl: 16000.0
+#   monthly_orders: 18
+#   distinct_eans: 320
