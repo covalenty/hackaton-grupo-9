@@ -38,6 +38,7 @@ def run(message_id: str, bq_client: bigquery.Client) -> list[dict]:
           FROM `cienty-data-platform.cienty_silver.whatsapp_offers`
           WHERE message_id   = @message_id
             AND match_status = 'matched'
+            AND IFNULL(direction, 'rep_offer') = 'rep_offer'
           LIMIT 1
         ),
 
