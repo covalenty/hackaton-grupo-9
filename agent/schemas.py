@@ -120,11 +120,12 @@ class BuyerProfile(BaseModel):
 
 
 class RelevanceBand(str, Enum):
-    URGENT = "urgent"          # alerta no momento
-    HIGH = "high"              # alerta padrão
-    MEDIUM = "medium"          # entra no feed sem alertar
-    LOW = "low"                # só registra
-    SKIP = "skip"              # ruído, não loga
+    URGENT = "urgent"                 # rep barato vs Cienty, alerta agora
+    HIGH = "high"                     # rep barato vs Cienty, alerta padrão
+    CIENTY_BETTER = "cienty_better"   # rep PIOR que Cienty — alerta a comprar via plataforma (defende GMV)
+    MEDIUM = "medium"                 # preço similar, só entra no feed
+    LOW = "low"                       # só registra
+    SKIP = "skip"                     # ruído, não loga
 
 
 class RelevanceScore(BaseModel):

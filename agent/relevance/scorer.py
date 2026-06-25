@@ -89,12 +89,18 @@ def score_offer(
         has_category = buyer.history.top_categories.get(therapeutic_category, 0) > 0
     signals["category_match"] = has_category
 
-    # 4. Economy — the discount itself
-    econ = 0.0
-    if economy_pct is not None and economy_pct > 0:
-        econ = min(1.0, economy_pct / ECONOMY_THRESHOLD_HIGH)
+    # 4. Economy — magnitude of the discount in either direction
+    # Positive economy_pct: rep is cheaper than Cienty → reward signal toward URGENT/HIGH
+    # Negative economy_pct: rep is MORE EXPENSIVE → reward signal toward CIENTY_BETTER
+    # We score by magnitude (|economy_pct|), then the band split decides direction.
+    economy_abs = abs(economy_pct) if economy_pct is not None else 0.0
+    econ = min(1.0, economy_abs / ECONOMY_THRESHOLD_HIGH) if economy_abs > 0 else 0.0
+    rep_is_cheaper = economy_pct is not None and economy_pct > 0
     signals["economy_pct"] = economy_pct
     signals["economy_signal"] = round(econ, 3)
+    signals["rep_is_cheaper"] = rep_is_cheaper
+
+    has_buyer_signal = has_direct or has_request or has_category
 
     score = (
         (W_HISTORY_DIRECT if has_direct else 0.0)
@@ -103,25 +109,35 @@ def score_offer(
         + (W_ECONOMY * econ)
     )
 
+    # Band selection:
+    #   If the rep is CHEAPER and the buyer cares, use the urgent/high/medium ladder.
+    #   If the rep is MORE EXPENSIVE and the buyer cares (and the gap is meaningful),
+    #     emit CIENTY_BETTER — alert to consolidate purchase on the Cienty side (defends GMV).
     band = RelevanceBand.LOW
-    for threshold, b in BAND_THRESHOLDS:
-        if score >= threshold:
-            band = b
-            break
+    if not rep_is_cheaper and has_buyer_signal and economy_abs >= 0.02:
+        # > 2% pricier than Cienty + buyer signal = nudge them to buy via Cienty
+        band = RelevanceBand.CIENTY_BETTER
     else:
-        band = RelevanceBand.SKIP if score < 0.1 else RelevanceBand.LOW
+        for threshold, b in BAND_THRESHOLDS:
+            if score >= threshold:
+                band = b
+                break
+        else:
+            band = RelevanceBand.SKIP if score < 0.1 else RelevanceBand.LOW
 
     # Reason — pick the strongest signal
     reasons = []
     if has_direct:
-        reasons.append(f"compra recorrente ({signals['history_qty']} un)")
+        reasons.append(f"compra recorrente ({signals.get('history_qty', '?')} un)")
     if has_request:
         reasons.append("pediu cotação no Zap")
     if has_category:
         reasons.append("categoria que compra")
-    if econ > 0.5:
+    if rep_is_cheaper and econ > 0.5:
         reasons.append(f"economia {economy_pct:.0%}")
-    reason = " · ".join(reasons) if reasons else "produto que o buyer não tem histórico"
+    if not rep_is_cheaper and economy_pct is not None and economy_abs >= 0.02:
+        reasons.append(f"Cienty {economy_abs:.0%} mais barato")
+    reason = " · ".join(reasons) if reasons else "produto sem sinal de interesse do buyer"
 
     return RelevanceScore(
         offer_message_id=offer.message_id,

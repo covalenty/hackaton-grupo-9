@@ -25,7 +25,7 @@ from ..relevance.scorer import score_offer
 from ..schemas import Direction, ExtractedOffer, RelevanceBand, RelevanceScore
 
 
-ALERT_BANDS = {RelevanceBand.URGENT, RelevanceBand.HIGH}
+ALERT_BANDS = {RelevanceBand.URGENT, RelevanceBand.HIGH, RelevanceBand.CIENTY_BETTER}
 
 
 def deliver(
