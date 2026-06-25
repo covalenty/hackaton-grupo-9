@@ -51,7 +51,11 @@ class LogSender:
 
 
 class HTTPSender:
-    """POST {url} -d {to, text}. Configurable endpoint + auth header."""
+    """POST {url} -d {number, text}. Matches the hackathon bridge's /send contract.
+
+    `number` must be digits only (no '+', no '@s.whatsapp.net'). HTTPSender
+    normalizes whatever string you pass to that shape.
+    """
 
     def __init__(
         self,
@@ -66,13 +70,24 @@ class HTTPSender:
             self.headers["Authorization"] = f"Bearer {bearer_token}"
         self.timeout = timeout
 
+    @staticmethod
+    def _normalize_number(raw: str) -> str:
+        """+5519988008998 → 5519988008998. Strip '+', JID suffix, whitespace."""
+        s = (raw or "").strip()
+        if s.startswith("+"):
+            s = s[1:]
+        if "@" in s:
+            s = s.split("@", 1)[0]
+        return "".join(ch for ch in s if ch.isdigit())
+
     def send(self, *, to: str, text: str, context: Optional[dict] = None) -> bool:
-        body = {"to": to, "text": text}
+        number = self._normalize_number(to)
+        body = {"number": number, "text": text}
         try:
             r = httpx.post(self.url, headers=self.headers, json=body, timeout=self.timeout)
             r.raise_for_status()
-            print(f"📨 sent → {to} (http {r.status_code})")
+            print(f"📨 sent → {number} (http {r.status_code})")
             return True
         except httpx.HTTPError as e:
-            print(f"[sender] HTTPSender failed for {to}: {e!r}")
+            print(f"[sender] HTTPSender failed for {number}: {e!r}")
             return False

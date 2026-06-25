@@ -53,6 +53,14 @@ class RawMessage(BaseModel):
         False,
         description="True when the sender is the buyer (Wagno). Set by parser using known buyer aliases.",
     )
+    media_paths: list[str] = Field(
+        default_factory=list,
+        description="Local file paths to attached images / docs (used by Stage 2 vision).",
+    )
+    media_urls: list[str] = Field(
+        default_factory=list,
+        description="Remote URLs to media (when bridge exposes /media/{id}). Stage 2 fetches lazily.",
+    )
 
 
 class ExtractedOffer(BaseModel):
@@ -75,6 +83,36 @@ class ExtractedOffer(BaseModel):
 
     # Buyer-request field (null when direction=rep_offer)
     requested_qty: Optional[int] = Field(None, description="Quantity the buyer is asking for, if mentioned")
+
+    # Patterns that vision unlocks (mostly image-bound offers)
+    region: Optional[str] = Field(
+        None,
+        description="Region restriction (BR state) — 'SP', 'RJ', 'NACIONAL'. "
+                    "Captured from labels like 'por SP', 'NAVARRO SP', 'AÇÃO SP'.",
+    )
+    tier_pricing: Optional[list[dict]] = Field(
+        None,
+        description="Volume-tiered prices when present. Each entry: "
+                    "{'min_qty': int, 'unit_price_brl': float}. "
+                    "Example: [{'min_qty': 24, 'unit_price_brl': 13.49}, "
+                    "{'min_qty': 60, 'unit_price_brl': 12.99}].",
+    )
+    max_qty_per_cnpj: Optional[int] = Field(
+        None,
+        description="Hard cap per CNPJ — distinct from min_qty. "
+                    "Example: 'Limitado em 60 unidades' → 60.",
+    )
+    source_label: Optional[str] = Field(
+        None,
+        description="Marketing label / campaign name when present. "
+                    "Examples: 'PROMOÇÃO NAVARRO', 'AÇÃO SP', 'Promoções Neo Química'.",
+    )
+    kit_items: Optional[list[dict]] = Field(
+        None,
+        description="When offer is a multi-product bundle (kit). "
+                    "Each entry: {'qty': int, 'product': str, 'unit_price_brl': float}. "
+                    "When set, price_offered_brl is the total kit price.",
+    )
 
     extraction_confidence: float = Field(1.0, ge=0.0, le=1.0)
     extraction_notes: Optional[str] = None

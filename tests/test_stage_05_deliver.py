@@ -78,13 +78,18 @@ def test_formatter_brl_and_economy():
         relevance=score,
         rep_name="Eduardo MILFARMA",
     )
-    assert "URGENT" in text
+    assert "Economize" in text
     assert "Eduardo MILFARMA" in text
     assert "Dipirona" in text
     assert "R$ 45,16" in text          # BR format with comma
     assert "R$ 52,90" in text
     assert "R$ 7,74" in text
     assert "15%" in text
+    assert "Fechar com Eduardo MILFARMA" in text  # CTA
+    # CTA links straight to the rep's WhatsApp chat
+    assert "https://wa.me/" in text
+    # URGENT/HIGH must NOT push Cienty (sale is happening with the rep)
+    assert "busca.cienty.com.br" not in text
 
 
 def test_deliver_alerts_on_high_relevance():
@@ -166,9 +171,13 @@ def test_deliver_cienty_better_when_rep_pricier():
     assert score.band == RelevanceBand.CIENTY_BETTER
     assert len(sender.calls) == 1
     text = sender.calls[0]["text"]
-    assert "MELHOR NA CIENTY" in text
+    assert "Cienty" in text
     assert "mais barato" in text
-    assert "comprando pela Cienty" in text or "comprar pela Cienty" in text.lower()
+    assert "Comprar na Cienty" in text
+    # search-results link with EAN + tracking params
+    assert "busca.cienty.com.br/results?term=7891234567890" in text
+    assert "utm_source=whatsapp" in text
+    assert "utm_medium=cienty-better-alert" in text
 
 
 def test_deliver_no_cienty_better_alert_without_buyer_signal():
