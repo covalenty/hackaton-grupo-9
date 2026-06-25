@@ -155,6 +155,11 @@ class BuyerProfile(BaseModel):
         default_factory=list,
         description="Names that appear as sender when this buyer is talking (e.g. 'WAGNO', 'C Cienty')",
     )
+    client_ids: list[int] = Field(
+        default_factory=list,
+        description="Cienty BQ client_id integers for this buyer's pharmacies. "
+                    "Used by Stage 4 to filter latest_commercial_conditions_realtime.",
+    )
 
 
 class RelevanceBand(str, Enum):

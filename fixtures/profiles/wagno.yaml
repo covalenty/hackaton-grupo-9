@@ -12,6 +12,7 @@ profile:
   - WAGNO
   - C Cienty
   - C Comprador
+  client_ids: [16, 34, 35]  # Drogaria Dom Pedro, Farmaestra II, Farmaestra III
 history:
   exposure_eans:
     '7899095201187': 43

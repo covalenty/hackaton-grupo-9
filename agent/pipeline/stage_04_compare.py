@@ -15,13 +15,25 @@ from google.cloud import bigquery
 PROJECT_ID = "cienty-data-platform"
 
 
-def run(message_id: str, bq_client: bigquery.Client) -> list[dict]:
+def run(
+    message_id: str,
+    bq_client: bigquery.Client,
+    client_ids: list[int] | None = None,
+) -> list[dict]:
     """
     Returns list of comparison dicts, one per eligible pharmacy.
     Each dict has: client_id, ean, economy_unit_brl, economy_pct,
                    is_better_than_cienty, stock_available, urgency_class, ...
+
+    Args:
+        client_ids: BQ client_id integers for the buyer's pharmacies.
+                    When provided, restricts the comparison to those pharmacies only.
+                    Without it the query returns one row per client in Cienty (~1k+ rows).
     """
-    query = """
+    client_ids = client_ids or []
+    client_id_filter = "AND client_id IN UNNEST(@client_ids)" if client_ids else ""
+
+    query = f"""
         WITH offer AS (
           SELECT
             message_id,
@@ -52,6 +64,7 @@ def run(message_id: str, bq_client: bigquery.Client) -> list[dict]:
             COUNT(*)                                      AS n_conditions
           FROM `cienty-data-platform.cienty_silver.latest_commercial_conditions_realtime`
           WHERE price_final_brl > 0
+            {client_id_filter}
           GROUP BY client_id, ean
         )
 
@@ -89,10 +102,9 @@ def run(message_id: str, bq_client: bigquery.Client) -> list[dict]:
         INNER JOIN cienty_best p USING (ean)
     """
 
-    job_config = bigquery.QueryJobConfig(
-        query_parameters=[
-            bigquery.ScalarQueryParameter("message_id", "STRING", message_id)
-        ]
-    )
+    params = [bigquery.ScalarQueryParameter("message_id", "STRING", message_id)]
+    if client_ids:
+        params.append(bigquery.ArrayQueryParameter("client_ids", "INT64", client_ids))
+    job_config = bigquery.QueryJobConfig(query_parameters=params)
 
     return [dict(row) for row in bq_client.query(query, job_config=job_config).result()]

@@ -142,7 +142,8 @@ def main() -> int:
                     row = stage_03.run(offer.model_dump(mode="json"), bq_client)
                     if not row or row.get("match_status") != "matched":
                         continue
-                    comps = stage_04.run(offer.message_id, bq_client) or []
+                    client_ids = buyer.profile.client_ids if buyer else []
+                    comps = stage_04.run(offer.message_id, bq_client, client_ids=client_ids) or []
                     for comp in comps:
                         if deliver_fn and buyer:
                             score = deliver_fn(

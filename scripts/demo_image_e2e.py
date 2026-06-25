@@ -35,13 +35,13 @@ from agent.relevance.scorer import score_offer
 from agent.schemas import Direction, MessageType, RawMessage, RelevanceBand
 
 
-def _bq_compare(offer, bq_client):
+def _bq_compare(offer, bq_client, client_ids=None):
     """Run Stage 3 + Stage 4 and return the first comparison row (or None)."""
     from agent.pipeline import stage_03_normalize, stage_04_compare
     row = stage_03_normalize.run(offer.model_dump(), bq_client)
     if not row or row.get("match_status") != "matched":
         return None, row
-    comps = stage_04_compare.run(offer.message_id, bq_client) or []
+    comps = stage_04_compare.run(offer.message_id, bq_client, client_ids=client_ids) or []
     return (comps[0] if comps else None), row
 
 
@@ -132,7 +132,7 @@ def main() -> int:
         comp, row = None, None
         if bq_client:
             try:
-                comp, row = _bq_compare(offer, bq_client)
+                comp, row = _bq_compare(offer, bq_client, client_ids=buyer.profile.client_ids)
             except Exception as e:  # noqa: BLE001
                 print(f"  [bq error] {e!r}")
         if not comp:
