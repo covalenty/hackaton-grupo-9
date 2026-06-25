@@ -138,6 +138,10 @@ def main() -> int:
         if not comp:
             comp = _synthetic_comparison(offer)
             print(f"  offer {i}: '{offer.product_name_raw}' -> synthetic comparison")
+            # When the BQ match wasn't high-confidence we drop canonical_name to
+            # avoid showing the wrong product name in the alert.
+            if row and row.get("match_status") != "matched":
+                row = None
         else:
             print(f"  offer {i}: '{offer.product_name_raw}' -> matched EAN {row.get('ean_matched')}")
 

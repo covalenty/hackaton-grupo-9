@@ -71,12 +71,20 @@ def score_offer(
 
     signals: dict = {}
 
-    # 1. Direct history — they bought this EAN from Cienty
+    # 1. Direct history — they bought this EAN, or were recurrently exposed to it.
+    # Cienty doesn't have a transactions table today, so exposure_eans (days seen
+    # with a price in the last 90d) is the proxy. When transactions land in BQ
+    # later, top_eans takes over as the stronger signal.
     has_direct = False
+    history_qty = 0
+    exposure_days = 0
     if ean and buyer.history is not None:
-        qty = buyer.history.top_eans.get(ean, 0)
-        has_direct = qty >= TOP_K_DIRECT_FLOOR
-        signals["history_qty"] = qty
+        history_qty = buyer.history.top_eans.get(ean, 0)
+        exposure_days = buyer.history.exposure_eans.get(ean, 0)
+        # Either transactions OR strong exposure pattern (>= 30 days in 90d window)
+        has_direct = history_qty >= TOP_K_DIRECT_FLOOR or exposure_days >= 30
+    signals["history_qty"] = history_qty
+    signals["exposure_days"] = exposure_days
     signals["has_cienty_history"] = has_direct
 
     # 2. Buyer request — they asked for this EAN on WhatsApp
@@ -128,7 +136,10 @@ def score_offer(
     # Reason — pick the strongest signal
     reasons = []
     if has_direct:
-        reasons.append(f"compra recorrente ({signals.get('history_qty', '?')} un)")
+        if history_qty > 0:
+            reasons.append(f"compra recorrente ({history_qty} un)")
+        else:
+            reasons.append(f"produto core do mix ({exposure_days}d expostos em 90d)")
     if has_request:
         reasons.append("pediu cotação no Zap")
     if has_category:

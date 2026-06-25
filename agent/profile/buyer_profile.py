@@ -26,15 +26,29 @@ from ..schemas import BuyerProfile
 class BuyerHistoryFeatures(BaseModel):
     """Per-buyer aggregates used by relevance scoring.
 
-    Computed across all CNPJs of the buyer, last 180 days of Cienty orders.
+    Cienty's data warehouse tracks PRICE EXPOSURE (commercial_conditions),
+    not consumer transactions. So we expose two complementary signals:
+
+      - top_eans: EAN → total qty PURCHASED.
+        Populated only if/when a transactions table is wired in. Today it's
+        empty for everyone — but it's the strongest signal when present,
+        so the scorer keeps it as a separate field.
+
+      - exposure_eans: EAN → days the buyer's clients saw this EAN priced
+        in the last window (default 90 days). Proxy for "they care about
+        this product" — high exposure = recurring purchase pattern.
     """
     top_eans: dict[str, int] = Field(
         default_factory=dict,
-        description="EAN → total qty purchased in the window. Used to score 'they buy this'.",
+        description="EAN → qty purchased. Strong signal but rarely populated today.",
+    )
+    exposure_eans: dict[str, int] = Field(
+        default_factory=dict,
+        description="EAN → days of price exposure in the window. Proxy when no transactions table exists.",
     )
     top_categories: dict[str, int] = Field(
         default_factory=dict,
-        description="therapeutic_category → total qty. Used to score 'they buy in this category'.",
+        description="therapeutic_category → score (qty or exposure-days, depending on source).",
     )
     monthly_gmv_brl: float = 0.0
     monthly_orders: int = 0
