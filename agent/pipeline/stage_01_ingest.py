@@ -7,11 +7,28 @@ Lida com:
   - timestamp ms → datetime
   - is_from_buyer via lista de aliases (do BuyerProfile)
   - dedup por id do webhook (mantém set in-memory)
+
+Vision-live: when the webhook payload includes media we can fetch, Stage 2
+runs vision. Two contracts supported (bridge picks one):
+
+  A) media_url   — top-level URL the bridge promises is fetchable from us
+                   (already decrypted by Baileys, exposed via the bridge).
+                   Stage 2 fetches via httpx.
+
+  B) media_b64   — top-level base64 string of the decrypted image bytes.
+                   Stage 1 writes it to a tmp file and Stage 2 reads locally.
+
+If neither field is set on an image payload we fall back to caption-only
+extraction (the imageMessage's caption text is preserved as `body`).
 """
 from __future__ import annotations
 
+import base64
 import hashlib
+import os
+import tempfile
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Iterable, Optional
 
 from ..schemas import MessageType, RawMessage
@@ -62,6 +79,62 @@ def _make_message_id(webhook_id: Optional[str], received_at: datetime, sender: O
     return hashlib.sha1(seed.encode("utf-8")).hexdigest()[:16]
 
 
+def _extract_image_caption(payload: dict) -> str:
+    """Pull the imageMessage caption out of the raw Baileys payload, if any.
+
+    Reps usually attach the caption in the SAME bubble as the image
+    ('R$ 9,69' under the tabela.jpg). That caption arrives at
+    raw.message.imageMessage.caption — not at payload.text (which is null
+    for non-text messages).
+    """
+    raw = payload.get("raw") or {}
+    if not isinstance(raw, dict):
+        return ""
+    msg = raw.get("message")
+    if not isinstance(msg, dict):
+        return ""
+    img = msg.get("imageMessage")
+    if isinstance(img, dict):
+        return (img.get("caption") or "").strip()
+    doc = msg.get("documentMessage")
+    if isinstance(doc, dict):
+        return (doc.get("caption") or "").strip()
+    return ""
+
+
+def _media_paths_from_payload(payload: dict) -> tuple[list[str], list[str]]:
+    """Return (media_paths, media_urls) extracted from the payload.
+
+    - `media_url`  (top-level)  → URL that Stage 2 can fetch via httpx.
+    - `media_b64`  (top-level)  → inline bytes; we materialize to a tmp file
+                                  under $TMPDIR/cienty-captura/ so vision can
+                                  read it as a local path.
+    """
+    media_paths: list[str] = []
+    media_urls: list[str] = []
+
+    url = payload.get("media_url")
+    if isinstance(url, str) and url.startswith(("http://", "https://")):
+        media_urls.append(url)
+
+    b64 = payload.get("media_b64")
+    if isinstance(b64, str) and b64:
+        try:
+            data = base64.b64decode(b64, validate=False)
+        except (ValueError, TypeError):
+            data = b""
+        if data:
+            tmp_dir = Path(tempfile.gettempdir()) / "cienty-captura"
+            tmp_dir.mkdir(parents=True, exist_ok=True)
+            mid = payload.get("id") or hashlib.sha1(data[:64]).hexdigest()[:16]
+            ext = ".jpg"  # WhatsApp images are jpeg by default; vision handles png/webp too
+            p = tmp_dir / f"{mid}{ext}"
+            p.write_bytes(data)
+            media_paths.append(str(p))
+
+    return media_paths, media_urls
+
+
 def to_raw_message(
     payload: dict,
     *,
@@ -79,6 +152,16 @@ def to_raw_message(
     message_type = _infer_message_type(payload)
     has_media = message_type != MessageType.TEXT
 
+    # When the message is image-like and has no top-level text, use the
+    # imageMessage's caption so Stage 2 still has the inline caption to fuse
+    # with the visual content.
+    if has_media and not text:
+        caption = _extract_image_caption(payload)
+        if caption:
+            text = caption
+
+    media_paths, media_urls = _media_paths_from_payload(payload)
+
     is_from_buyer = bool(sender_name) and sender_name.strip().lower() in aliases
 
     group_name = None
@@ -95,4 +178,6 @@ def to_raw_message(
         has_media=has_media,
         message_type=message_type,
         is_from_buyer=is_from_buyer,
+        media_paths=media_paths,
+        media_urls=media_urls,
     )

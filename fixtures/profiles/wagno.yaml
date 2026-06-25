@@ -2,7 +2,7 @@ profile:
   buyer_id: farmaestra
   display_name: Wagno · Farmaestra
   cnpjs:
-  - 04.796.409/0001-17
+  - 04.796.400/0001-17  # Drogaria Dom Pedro (client_id=16). Era 409 — typo no profile original; canonical no buyer_phone_cnpj_map é 400.
   - 02.578.461/0001-71
   - 08.731.088/0001-23
   source_phones:
@@ -286,6 +286,13 @@ history:
     G3A5 - PREPARAÇÕES ORAIS COM PROGESTAGÊNIOS SOMENTE: 39
     A8A - PREPARAÇÕES ANTIOBESIDADE, EXCETO OS DIETÉTICOS: 39
   distinct_eans: 200
-  top_eans: {}
+  # EANs do demo cliente — 4 produtos com >= 0.85 confidence no catálogo, usados
+  # pelo demo_client.py + mensagens que a Miriam manda como rep. Quando o BQ
+  # buyer_history.sql plugar de verdade, esse bloco vira fallback.
+  top_eans:
+    '7896004713922': 240   # Losartana+HCTZ EMS 50/12.5mg cx30
+    '7891317000110': 180   # Paracetamol+Codeina Eurofarma 30mg c12
+    '7895296210959': 120   # Dipirona Nova Quimica 500mg c240
+    '7896004729435': 200   # Atorvastatina EMS 20mg c30
   monthly_gmv_brl: 0.0
   monthly_orders: 0

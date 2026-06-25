@@ -47,7 +47,9 @@ def run(message_id: str, bq_client: bigquery.Client) -> list[dict]:
             client_id,
             ean,
             MIN(price_final_brl)                          AS price_cienty_brl,
-            MAX(stock)                                    AS max_stock
+            -- The realtime view doesn't expose stock; treat as 'available'
+            -- when there's any commercial condition with a positive price.
+            COUNT(*)                                      AS n_conditions
           FROM `cienty-data-platform.cienty_silver.latest_commercial_conditions_realtime`
           WHERE price_final_brl > 0
           GROUP BY client_id, ean
@@ -69,14 +71,14 @@ def run(message_id: str, bq_client: bigquery.Client) -> list[dict]:
             1
           )                                                      AS economy_pct,
           o.price_offered_brl < p.price_cienty_brl              AS is_better_than_cienty,
-          COALESCE(p.max_stock > 0, FALSE)                       AS stock_available,
+          COALESCE(p.n_conditions > 0, FALSE)                       AS stock_available,
           o.bonus_type,
           o.min_qty,
           o.deadline,
           o.source_phone,
           CASE
             WHEN o.price_offered_brl < p.price_cienty_brl
-              AND COALESCE(p.max_stock > 0, FALSE)
+              AND COALESCE(p.n_conditions > 0, FALSE)
               AND (o.deadline IS NULL OR o.deadline > CURRENT_TIMESTAMP())
             THEN 'urgent'
             WHEN o.price_offered_brl < p.price_cienty_brl
