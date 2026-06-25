@@ -144,6 +144,53 @@ def test_deliver_skips_buyer_request():
     assert sender.calls == []
 
 
+def test_deliver_cienty_better_when_rep_pricier():
+    """Rep offer is MORE expensive than Cienty + buyer has history → CIENTY_BETTER alert."""
+    buyer = _wagno_context_with_history("7891234567890")
+    sender = CaptureSender()
+    score = deliver(
+        offer=_offer(45.16),  # rep offer
+        comparison={
+            "ean": "7891234567890",
+            "price_cienty_brl": 42.21,   # Cienty cheaper
+            "economy_unit_brl": -2.95,    # negative = rep more expensive
+            "economy_pct": -0.070,
+            "urgency_class": "standard",
+        },
+        buyer=buyer,
+        canonical_name="Dipirona Nova Quimica 500Mg com 240",
+        therapeutic_category="ANALGESICO",
+        rep_name="Eduardo MILFARMA",
+        sender=sender,
+    )
+    assert score.band == RelevanceBand.CIENTY_BETTER
+    assert len(sender.calls) == 1
+    text = sender.calls[0]["text"]
+    assert "MELHOR NA CIENTY" in text
+    assert "mais barato" in text
+    assert "comprando pela Cienty" in text or "comprar pela Cienty" in text.lower()
+
+
+def test_deliver_no_cienty_better_alert_without_buyer_signal():
+    """Rep pricier but buyer has no history/request → don't bother with the alert."""
+    buyer = _wagno_context_with_history("7891234567890")  # history on different EAN
+    sender = CaptureSender()
+    score = deliver(
+        offer=_offer(45.16),
+        comparison={
+            "ean": "9999999999999",        # not in buyer history
+            "price_cienty_brl": 42.21,
+            "economy_unit_brl": -2.95,
+            "economy_pct": -0.070,
+            "urgency_class": "standard",
+        },
+        buyer=buyer,
+        sender=sender,
+    )
+    assert score.band != RelevanceBand.CIENTY_BETTER
+    assert sender.calls == []
+
+
 def test_logsender_persists_jsonl(tmp_path):
     log_path = tmp_path / "alerts.jsonl"
     sender = LogSender(jsonl_path=log_path)

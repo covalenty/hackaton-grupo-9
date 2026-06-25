@@ -139,7 +139,7 @@ def main() -> int:
                 if offer.direction.value != "rep_offer":
                     continue
                 try:
-                    row = stage_03.run(offer.model_dump(), bq_client)
+                    row = stage_03.run(offer.model_dump(mode="json"), bq_client)
                     if not row or row.get("match_status") != "matched":
                         continue
                     comps = stage_04.run(offer.message_id, bq_client) or []
