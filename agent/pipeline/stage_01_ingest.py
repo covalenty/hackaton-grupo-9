@@ -105,16 +105,28 @@ def _extract_image_caption(payload: dict) -> str:
 def _media_paths_from_payload(payload: dict) -> tuple[list[str], list[str]]:
     """Return (media_paths, media_urls) extracted from the payload.
 
-    - `media_url`  (top-level)  → URL that Stage 2 can fetch via httpx.
-    - `media_b64`  (top-level)  → inline bytes; we materialize to a tmp file
-                                  under $TMPDIR/cienty-captura/ so vision can
-                                  read it as a local path.
+    Accepts either the canonical bridge contract (`media_urls`, plural array)
+    or the legacy singular form. Both formats coexist for backwards-compat:
+
+    - `media_urls` (top-level, list[str])  → preferred. Thiagueira's bridge ships:
+        {"media_urls": ["https://.../media/<id>"], "media_type": "image", ...}
+    - `media_url`  (top-level, str)        → legacy singular form (kept for tests).
+    - `media_b64`  (top-level, str)        → inline base64 bytes; materialized to a
+                                             tmp file under $TMPDIR/cienty-captura/.
     """
     media_paths: list[str] = []
     media_urls: list[str] = []
 
+    # Canonical: array under "media_urls"
+    urls = payload.get("media_urls")
+    if isinstance(urls, list):
+        for u in urls:
+            if isinstance(u, str) and u.startswith(("http://", "https://")):
+                media_urls.append(u)
+
+    # Legacy: single string under "media_url"
     url = payload.get("media_url")
-    if isinstance(url, str) and url.startswith(("http://", "https://")):
+    if isinstance(url, str) and url.startswith(("http://", "https://")) and url not in media_urls:
         media_urls.append(url)
 
     b64 = payload.get("media_b64")

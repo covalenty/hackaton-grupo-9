@@ -135,6 +135,64 @@ def test_media_url_populates_urls():
     assert msg.body == "promo do dia"
 
 
+def test_media_urls_array_from_bridge_contract():
+    """Bridge ships media_urls as an array (Thiagueira's contract). Stage 1 must accept it."""
+    payload = {
+        "id": "3A7501F522823F4FC189",
+        "from": "5519999998888@s.whatsapp.net",
+        "name": "Paulinho Navarro",
+        "text": "Limitado em 60 unidades por SP",
+        "media_type": "image",
+        "media_mimetype": "image/jpeg",
+        "media_urls": [
+            "https://used-pad-interstate-smithsonian.trycloudflare.com/media/3A7501F522823F4FC189"
+        ],
+        "timestamp": 1782413308069,
+        "raw": {"message": {"imageMessage": {}}},
+    }
+    msg = to_raw_message(payload)
+    assert msg.media_urls == [
+        "https://used-pad-interstate-smithsonian.trycloudflare.com/media/3A7501F522823F4FC189"
+    ]
+    # text was set by the bridge as the caption — preserved
+    assert "Limitado em 60" in msg.body
+
+
+def test_no_media_when_array_empty():
+    """media_urls=[] (bridge tells us 'no media') should not produce any URL."""
+    payload = {
+        "id": "TEXT_ONLY",
+        "from": "5519999998888@s.whatsapp.net",
+        "name": "Eduardo MILFARMA",
+        "text": "DIPIRONA R$ 5,16",
+        "media_type": None,
+        "media_urls": [],
+        "timestamp": 1782413308069,
+        "raw": {},
+    }
+    msg = to_raw_message(payload)
+    assert msg.media_urls == []
+    assert msg.media_paths == []
+    assert msg.has_media is False  # bridge said no media
+
+
+def test_media_url_singular_and_urls_array_both_supported():
+    """Belt-and-suspenders: both keys present → both URLs accepted, no dupes."""
+    payload = {
+        "id": "BOTH",
+        "from": "5519999998888@s.whatsapp.net",
+        "name": "Paulinho Navarro",
+        "text": None,
+        "timestamp": 1782396413000,
+        "media_urls": ["https://bridge.example.com/media/BOTH"],
+        "media_url": "https://bridge.example.com/media/BOTH",  # dup
+        "raw": {"message": {"imageMessage": {"caption": ""}}},
+    }
+    msg = to_raw_message(payload)
+    # Same URL appearing in both keys should land in the list ONCE
+    assert msg.media_urls == ["https://bridge.example.com/media/BOTH"]
+
+
 def test_media_b64_materializes_tmp_file():
     """Inline base64 bytes get written to disk so Stage 2 vision can read them."""
     # 1x1 transparent PNG
