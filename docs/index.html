@@ -459,95 +459,110 @@
 
   <!-- ── SLIDE 5 — DEMO AO VIVO ── -->
   <section class="slide" id="s5">
-    <div class="wide" style="display:flex;flex-direction:column;gap:1.6rem;">
+    <div class="wide" style="display:flex;flex-direction:column;gap:1.4rem;">
       <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
         <div class="col" style="gap:.4rem;">
           <span class="eyebrow">Demo ao vivo</span>
-          <h2 class="headline">3 alertas reais entregues no Zap</h2>
+          <h2 class="headline">Da oferta no Zap ao alerta — em segundos</h2>
         </div>
         <span class="tag teal" style="font-size:.7rem;padding:.3em .9em;">Pipeline 100% end-to-end ✓</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;width:100%;max-width:900px;">
-        <div style="background:#0d140d;border:1px solid rgba(45,232,176,.3);border-radius:2px;padding:1.1rem 1.2rem;display:flex;flex-direction:column;gap:.5rem;">
-          <div style="display:flex;gap:.5rem;align-items:center;">
-            <span style="font-size:.85rem;">🔴</span>
-            <span style="font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--teal);letter-spacing:.08em;text-transform:uppercase;">URGENT</span>
-          </div>
-          <span style="font-size:.78rem;font-weight:700;color:var(--text);">Eduardo MILFARMA</span>
-          <span style="font-size:.75rem;color:var(--text-muted);line-height:1.4;">Dipirona Nova Química 500Mg c/240</span>
-          <div style="border-top:1px solid rgba(45,232,176,.15);padding-top:.5rem;margin-top:.2rem;">
-            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;">
-              <span style="color:var(--text-muted);">Oferta</span><span style="color:var(--text);">R$ 30,00/un</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;">
-              <span style="color:var(--text-muted);">Cienty</span><span style="color:var(--teal);">R$ 42,21/un</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.78rem;margin-top:.3rem;">
-              <span style="color:var(--teal);font-weight:700;">Economia</span><span style="color:var(--teal);font-weight:700;">29% · R$ 12,21/un</span>
+      <!-- FLOW DIAGRAM -->
+      <div style="display:flex;align-items:stretch;gap:0;width:100%;max-width:960px;overflow-x:auto;">
+
+        <!-- STEP 1: WhatsApp message -->
+        <div style="flex:0 0 auto;width:168px;display:flex;flex-direction:column;gap:.5rem;">
+          <div style="font-family:var(--mono);font-size:.6rem;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem;">Rep → Zap</div>
+          <div style="background:#1a1a10;border:1px solid rgba(255,220,0,.2);border-radius:2px 12px 12px 12px;padding:.9rem 1rem;flex:1;display:flex;flex-direction:column;gap:.4rem;">
+            <div style="font-size:.62rem;color:rgba(255,220,0,.6);font-family:var(--mono);">Eduardo MILFARMA · 22h47</div>
+            <div style="font-size:.72rem;color:var(--text);line-height:1.4;">DIPIRONA 500MG 24X10 BLISTER</div>
+            <div style="font-size:.72rem;color:var(--text);line-height:1.4;">Pct <strong style="color:var(--yellow);">R$ 30,00</strong></div>
+            <div style="font-size:.65rem;color:var(--text-muted);">min 24un · bônus 1:1</div>
+            <div style="margin-top:.4rem;background:rgba(255,255,255,.05);border-radius:4px;padding:.5rem;display:flex;align-items:center;justify-content:center;">
+              <div style="font-size:.6rem;color:var(--text-muted);text-align:center;">📷 tabela<br>promoção.jpg</div>
             </div>
           </div>
         </div>
-        <div style="background:#0d140d;border:1px solid rgba(45,232,176,.3);border-radius:2px;padding:1.1rem 1.2rem;display:flex;flex-direction:column;gap:.5rem;">
-          <div style="display:flex;gap:.5rem;align-items:center;">
-            <span style="font-size:.85rem;">🔴</span>
-            <span style="font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--teal);letter-spacing:.08em;text-transform:uppercase;">URGENT</span>
+
+        <!-- ARROW -->
+        <div style="display:flex;align-items:center;padding:0 .5rem;padding-top:1.6rem;">
+          <svg width="28" height="12" viewBox="0 0 28 12"><path d="M0 6h24M18 1l6 5-6 5" stroke="rgba(104,104,138,.6)" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+        </div>
+
+        <!-- STEP 2: Extract -->
+        <div style="flex:1;min-width:130px;display:flex;flex-direction:column;gap:.5rem;">
+          <div style="font-family:var(--mono);font-size:.6rem;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem;">02 · Extract</div>
+          <div style="background:var(--surface);border:1px solid rgba(220,54,192,.2);border-radius:2px;padding:.9rem 1rem;flex:1;display:flex;flex-direction:column;gap:.3rem;">
+            <div style="font-size:.65rem;color:var(--text-muted);">LLM + Vision</div>
+            <div style="font-family:var(--mono);font-size:.65rem;color:var(--text);line-height:1.5;">product_name_raw<br><span style="color:var(--accent);">"Dipirona 24x10"</span></div>
+            <div style="font-family:var(--mono);font-size:.65rem;color:var(--text);">price_offered_brl<br><span style="color:var(--yellow);">30.00</span></div>
+            <div style="font-family:var(--mono);font-size:.65rem;color:var(--text);">bonus_type<br><span style="color:var(--teal);">"1:1"</span></div>
+            <div style="margin-top:.3rem;" class="tag" style="font-size:.55rem;">conf 0.99</div>
           </div>
-          <span style="font-size:.78rem;font-weight:700;color:var(--text);">Daniele Servimed</span>
-          <span style="font-size:.75rem;color:var(--text-muted);line-height:1.4;">Dipirona Nova Química 500Mg c/240</span>
-          <div style="border-top:1px solid rgba(45,232,176,.15);padding-top:.5rem;margin-top:.2rem;">
-            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;">
-              <span style="color:var(--text-muted);">Oferta</span><span style="color:var(--text);">R$ 38,00/un</span>
+        </div>
+
+        <!-- ARROW -->
+        <div style="display:flex;align-items:center;padding:0 .5rem;padding-top:1.6rem;">
+          <svg width="28" height="12" viewBox="0 0 28 12"><path d="M0 6h24M18 1l6 5-6 5" stroke="rgba(104,104,138,.6)" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+        </div>
+
+        <!-- STEP 3: Normalize -->
+        <div style="flex:1;min-width:130px;display:flex;flex-direction:column;gap:.5rem;">
+          <div style="font-family:var(--mono);font-size:.6rem;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem;">03 · Normalize</div>
+          <div style="background:var(--surface);border:1px solid rgba(220,54,192,.2);border-radius:2px;padding:.9rem 1rem;flex:1;display:flex;flex-direction:column;gap:.3rem;">
+            <div style="font-size:.65rem;color:var(--text-muted);">Fuzzy match · 79k EANs</div>
+            <div style="font-family:var(--mono);font-size:.62rem;color:var(--teal);line-height:1.5;word-break:break-all;">EAN<br>7895296219959</div>
+            <div style="font-family:var(--mono);font-size:.62rem;color:var(--text);line-height:1.4;">Dipirona Nova<br>Química 500Mg c/240</div>
+            <div style="font-family:var(--mono);font-size:.62rem;color:var(--teal);">score: 0.87 ✓</div>
+          </div>
+        </div>
+
+        <!-- ARROW -->
+        <div style="display:flex;align-items:center;padding:0 .5rem;padding-top:1.6rem;">
+          <svg width="28" height="12" viewBox="0 0 28 12"><path d="M0 6h24M18 1l6 5-6 5" stroke="rgba(104,104,138,.6)" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+        </div>
+
+        <!-- STEP 4: Compare -->
+        <div style="flex:1;min-width:130px;display:flex;flex-direction:column;gap:.5rem;">
+          <div style="font-family:var(--mono);font-size:.6rem;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem;">04 · Compare</div>
+          <div style="background:var(--surface);border:1px solid rgba(220,54,192,.2);border-radius:2px;padding:.9rem 1rem;flex:1;display:flex;flex-direction:column;gap:.3rem;">
+            <div style="font-size:.65rem;color:var(--text-muted);">vs. 272M linhas Cienty</div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.68rem;margin-top:.2rem;">
+              <span style="color:var(--text-muted);">Rep</span><span style="color:var(--text);">R$ 30,00</span>
             </div>
-            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;">
-              <span style="color:var(--text-muted);">Cienty</span><span style="color:var(--teal);">R$ 42,21/un</span>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.68rem;">
+              <span style="color:var(--text-muted);">Cienty</span><span style="color:var(--teal);">R$ 42,21</span>
             </div>
-            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.78rem;margin-top:.3rem;">
-              <span style="color:var(--teal);font-weight:700;">Economia</span><span style="color:var(--teal);font-weight:700;">10% · R$ 4,21/un</span>
+            <div style="border-top:1px solid var(--border);padding-top:.4rem;margin-top:.2rem;">
+              <div style="font-family:var(--mono);font-size:.72rem;color:var(--teal);font-weight:700;">+R$ 12,21/un</div>
+              <div style="font-family:var(--mono);font-size:.68rem;color:var(--teal);">29% economia</div>
             </div>
           </div>
         </div>
-        <div style="background:#14080f;border:1px solid rgba(220,54,192,.3);border-radius:2px;padding:1.1rem 1.2rem;display:flex;flex-direction:column;gap:.5rem;">
-          <div style="display:flex;gap:.5rem;align-items:center;">
-            <span style="font-size:.85rem;">🟡</span>
-            <span style="font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;">MELHOR NA CIENTY</span>
-          </div>
-          <span style="font-size:.78rem;font-weight:700;color:var(--text);">Patrícia Nogueira</span>
-          <span style="font-size:.75rem;color:var(--text-muted);line-height:1.4;">Dipirona Nova Química 500Mg c/240</span>
-          <div style="border-top:1px solid rgba(220,54,192,.15);padding-top:.5rem;margin-top:.2rem;">
-            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;">
-              <span style="color:var(--text-muted);">Rep</span><span style="color:var(--red);">R$ 50,00/un</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;">
-              <span style="color:var(--text-muted);">Cienty</span><span style="color:var(--accent);">R$ 42,21/un ✓</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.78rem;margin-top:.3rem;">
-              <span style="color:var(--accent);font-weight:700;">→ Bater pela Cienty</span><span style="color:var(--accent);font-weight:700;">18% mais barato</span>
+
+        <!-- ARROW -->
+        <div style="display:flex;align-items:center;padding:0 .5rem;padding-top:1.6rem;">
+          <svg width="28" height="12" viewBox="0 0 28 12"><path d="M0 6h24M18 1l6 5-6 5" stroke="rgba(104,104,138,.6)" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+        </div>
+
+        <!-- STEP 5: Alert -->
+        <div style="flex:0 0 auto;width:168px;display:flex;flex-direction:column;gap:.5rem;">
+          <div style="font-family:var(--mono);font-size:.6rem;color:var(--teal);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem;">Zap do Wagno ✓</div>
+          <div style="background:#0d140d;border:1px solid rgba(45,232,176,.3);border-radius:12px 12px 12px 2px;padding:.9rem 1rem;flex:1;display:flex;flex-direction:column;gap:.4rem;">
+            <div style="font-size:.72rem;color:var(--teal);font-weight:700;">🔴 Economize R$ 12,21/un · 29%</div>
+            <div style="font-size:.68rem;color:var(--text);">Dipirona 500mg 24x10</div>
+            <div style="font-size:.65rem;color:var(--text-muted);">Eduardo MILFARMA: R$ 30,00/un</div>
+            <div style="font-size:.65rem;color:var(--teal);">Cienty hoje: R$ 42,21/un</div>
+            <div style="font-size:.63rem;color:var(--text-muted);">bonus 1:1 · min 24un</div>
+            <div style="margin-top:.4rem;background:rgba(45,232,176,.08);border:1px solid rgba(45,232,176,.2);border-radius:4px;padding:.4rem .6rem;">
+              <div style="font-size:.65rem;color:var(--yellow);font-weight:700;">💰 Fechar com Eduardo:</div>
+              <div style="font-size:.6rem;color:var(--accent);">wa.me/rep · 1 toque</div>
             </div>
           </div>
         </div>
+
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;width:100%;max-width:900px;margin-top:.5rem;">
-        <div style="background:#050509;border:1px solid var(--border);border-radius:4px;padding:1rem 1.2rem;font-family:var(--mono);font-size:.72rem;line-height:1.7;">
-          <div style="color:var(--text-muted);margin-bottom:.5rem;font-size:.65rem;letter-spacing:.08em;">URGENT · formato final</div>
-          <div style="color:var(--teal);">🔴 Economize R$ 12,21/un · 29%</div>
-          <div style="color:var(--text-muted);">Dipirona 500mg 24x10</div>
-          <div style="color:var(--text);">Eduardo MILFARMA: R$ 30,00/un</div>
-          <div style="color:var(--text);">Cienty hoje: R$ 42,21/un</div>
-          <div style="color:var(--text-muted);">bonus 1:1 · min 24un</div>
-          <div style="margin-top:.5rem;color:var(--yellow);">💰 Fechar com Eduardo MILFARMA:</div>
-          <div style="color:var(--accent);">wa.me/rep · 1 toque abre chat</div>
-        </div>
-        <div style="background:#050509;border:1px solid var(--border);border-radius:4px;padding:1rem 1.2rem;font-family:var(--mono);font-size:.72rem;line-height:1.7;">
-          <div style="color:var(--text-muted);margin-bottom:.5rem;font-size:.65rem;letter-spacing:.08em;">CIENTY_BETTER · formato final</div>
-          <div style="color:var(--accent);">💛 Cienty R$ 7,79/un mais barato · 18%</div>
-          <div style="color:var(--text-muted);">Dipirona 500mg 24x10</div>
-          <div style="color:var(--red);">Patrícia Nogueira: R$ 50,00/un</div>
-          <div style="color:var(--teal);">Cienty: R$ 42,21/un ✓</div>
-          <div style="margin-top:.5rem;color:var(--yellow);">🔗 Comprar na Cienty:</div>
-          <div style="color:var(--teal);">busca.cienty.com.br?ean=...&utm_medium=cienty-better-alert</div>
-        </div>
-      </div>
-      <p class="body" style="font-size:.75rem;max-width:80ch;margin-top:.5rem;">Cada CTA abre diretamente o ponto de fechamento — chat do rep ou busca na Cienty pelo EAN. GMV atribuído via UTM. 1 toque.</p>
+      <p class="body" style="font-size:.75rem;max-width:80ch;">Mesmo fluxo pra imagem de tabela (Vision) ou texto. Testado ao vivo — 3 alertas reais chegaram no Zap da Cienty hoje.</p>
     </div>
   </section>
 
