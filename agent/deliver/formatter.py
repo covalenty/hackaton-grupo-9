@@ -22,11 +22,21 @@ from ..schemas import ExtractedOffer, RelevanceBand, RelevanceScore
 CIENTY_PRODUCT_URL_BASE = os.getenv("CIENTY_PRODUCT_URL_BASE", "https://app.cienty.com.br")
 
 
-def _product_url(ean: Optional[str], message_id: Optional[str]) -> Optional[str]:
-    """Build a deep-link to the product page with attribution params."""
+def _product_url(
+    ean: Optional[str],
+    message_id: Optional[str],
+    *,
+    medium: str = "cienty-better-alert",
+) -> Optional[str]:
+    """Build a deep-link to the product page with attribution params.
+
+    `medium` distinguishes the alert context in analytics:
+      - cienty-better-alert: rep was pricier; CTA is buy-on-Cienty
+      - verify-link:         rep was cheaper; CTA is confirm-cienty-price
+    """
     if not ean:
         return None
-    qs = "utm_source=whatsapp&utm_medium=cienty-better-alert"
+    qs = f"utm_source=whatsapp&utm_medium={medium}"
     if message_id:
         qs += f"&alert_id={message_id}"
     return f"{CIENTY_PRODUCT_URL_BASE}/produto/{ean}?{qs}"
@@ -68,8 +78,13 @@ def _format_rep_cheaper(
     economy_unit_brl: Optional[float],
     economy_pct: Optional[float],
     rep_name: Optional[str],
+    ean: Optional[str],
 ) -> str:
-    """URGENT/HIGH — rep is cheaper than Cienty. Lead with economy + CTA to act."""
+    """URGENT/HIGH — rep is cheaper than Cienty. Lead with economy + CTA to act.
+
+    Includes a verify link to the Cienty product page so the buyer can
+    confirm the comparison themselves. Builds trust over time.
+    """
     product = canonical_name or offer.product_name_raw
     lines: list[str] = []
 
@@ -96,6 +111,12 @@ def _format_rep_cheaper(
     lines.append("")
     cta_rep = rep_name or "o rep"
     lines.append(f"👉 Vale fechar com {cta_rep}")
+
+    verify_url = _product_url(ean, offer.message_id, medium="verify-link")
+    if verify_url:
+        lines.append("")
+        lines.append(f"_Conferir preço Cienty:_ {verify_url}")
+
     return "\n".join(lines)
 
 
@@ -173,4 +194,5 @@ def format_alert(
         economy_unit_brl=economy_unit_brl,
         economy_pct=economy_pct,
         rep_name=rep_name,
+        ean=relevance.ean_matched,
     )

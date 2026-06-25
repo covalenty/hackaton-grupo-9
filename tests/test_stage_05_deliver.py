@@ -85,7 +85,11 @@ def test_formatter_brl_and_economy():
     assert "R$ 52,90" in text
     assert "R$ 7,74" in text
     assert "15%" in text
-    assert "Vale fechar com Eduardo MILFARMA" in text  # CTA
+    assert "Vale fechar com Eduardo MILFARMA" in text  # primary CTA
+    # verify link (trust)
+    assert "Conferir preço Cienty" in text
+    assert "/produto/7891234567890" in text
+    assert "utm_medium=verify-link" in text
 
 
 def test_deliver_alerts_on_high_relevance():
