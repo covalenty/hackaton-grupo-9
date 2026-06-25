@@ -1,0 +1,769 @@
+<title>Agente Captura WhatsApp — Hackathon Cienty 2026 · Time 9</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #08080e;
+    --surface: #111119;
+    --surface-2: #1a1a28;
+    --border: #252535;
+    --accent: #dc36c0;
+    --accent-dim: rgba(220,54,192,0.12);
+    --accent-glow: rgba(220,54,192,0.35);
+    --teal: #2de8b0;
+    --yellow: #f5c842;
+    --red: #f55050;
+    --text: #ededf5;
+    --text-muted: #68688a;
+    --text-dim: #44445a;
+    --mono: 'SF Mono','Cascadia Code','Consolas',monospace;
+    --sans: -apple-system,'Helvetica Neue',Arial,sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--sans); }
+
+  /* ── Deck ── */
+  #deck { position: relative; width: 100%; height: 100%; }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 6vmin 8vmin;
+    opacity: 0; pointer-events: none;
+    transition: opacity .45s ease, transform .45s ease;
+    transform: translateY(18px);
+  }
+  .slide.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .slide.exit { opacity: 0; transform: translateY(-18px); }
+
+  /* ── Nav dots ── */
+  #dots {
+    position: fixed; right: 2rem; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: .6rem; z-index: 100;
+  }
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--border); border: none; cursor: pointer;
+    transition: background .2s, transform .2s;
+  }
+  .dot.active { background: var(--accent); transform: scale(1.5); }
+
+  /* ── Progress bar ── */
+  #progress {
+    position: fixed; bottom: 0; left: 0;
+    height: 2px; background: var(--accent);
+    transition: width .4s ease; z-index: 100;
+  }
+
+  /* ── Slide counter ── */
+  #counter {
+    position: fixed; bottom: 1.5rem; right: 2.5rem;
+    font-size: .7rem; font-family: var(--mono); color: var(--text-muted);
+    letter-spacing: .1em;
+  }
+
+  /* ── Eyebrow ── */
+  .eyebrow {
+    font-size: .65rem; font-weight: 600; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 1rem;
+  }
+
+  /* ── Type scale ── */
+  .display { font-size: clamp(2.4rem, 5.5vw, 4.2rem); font-weight: 700; line-height: 1.1; letter-spacing: -.02em; text-wrap: balance; }
+  .headline { font-size: clamp(1.6rem, 3.2vw, 2.6rem); font-weight: 700; line-height: 1.15; letter-spacing: -.015em; text-wrap: balance; }
+  .subhead { font-size: clamp(1rem, 1.6vw, 1.25rem); color: var(--text-muted); line-height: 1.55; max-width: 52ch; }
+  .body { font-size: clamp(.88rem, 1.2vw, 1rem); line-height: 1.65; color: var(--text-muted); }
+  .label { font-size: .7rem; font-family: var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ── Tag ── */
+  .tag {
+    display: inline-block; padding: .2em .7em; border-radius: 2px;
+    font-size: .65rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(220,54,192,.2);
+  }
+  .tag.teal { background: rgba(45,232,176,.1); color: var(--teal); border-color: rgba(45,232,176,.2); }
+  .tag.yellow { background: rgba(245,200,66,.1); color: var(--yellow); border-color: rgba(245,200,66,.2); }
+  .tag.red { background: rgba(245,80,80,.1); color: var(--red); border-color: rgba(245,80,80,.2); }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 2px;
+    padding: 1.4rem 1.6rem;
+  }
+
+  /* ── Grid helpers ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; width: 100%; max-width: 1000px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; width: 100%; max-width: 1000px; }
+  .col { display: flex; flex-direction: column; gap: .8rem; }
+  .row { display: flex; gap: 1rem; align-items: center; }
+  .center { text-align: center; align-items: center; }
+  .wide { max-width: 900px; width: 100%; }
+
+  /* ── Divider ── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 1 — Title
+  ───────────────────────────────────────────── */
+  #s1 { background: var(--bg); }
+  .title-glow {
+    position: absolute; top: 50%; left: 50%;
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse at center, rgba(220,54,192,.18) 0%, transparent 70%);
+    transform: translate(-50%,-50%); pointer-events: none;
+  }
+  .title-wrap { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 1.4rem; max-width: 760px; }
+  .title-meta { display: flex; gap: .8rem; align-items: center; }
+  .title-accent { color: var(--accent); }
+  .title-sub { font-size: clamp(.9rem,1.4vw,1.1rem); color: var(--text-muted); line-height: 1.6; max-width: 52ch; }
+  .title-stats { display: flex; gap: 2.5rem; margin-top: .5rem; }
+  .stat { display: flex; flex-direction: column; gap: .2rem; }
+  .stat-n { font-family: var(--mono); font-size: clamp(1.4rem,2.2vw,1.9rem); font-weight: 700; color: var(--teal); }
+  .stat-l { font-size: .65rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 2 — O Problema
+  ───────────────────────────────────────────── */
+  .problem-quotes { display: flex; flex-direction: column; gap: 1rem; }
+  .quote-bubble {
+    background: var(--surface-2); border-radius: 2px 14px 14px 14px;
+    padding: 1rem 1.2rem; max-width: 360px; position: relative;
+    border: 1px solid var(--border);
+  }
+  .quote-bubble .q-text { font-size: .88rem; line-height: 1.5; color: var(--text); }
+  .quote-bubble .q-meta { font-size: .65rem; color: var(--text-muted); margin-top: .4rem; font-family: var(--mono); }
+  .quote-bubble.right { border-radius: 14px 2px 14px 14px; align-self: flex-end; background: rgba(220,54,192,.08); border-color: rgba(220,54,192,.2); }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 3 — Pipeline
+  ───────────────────────────────────────────── */
+  .pipeline {
+    display: flex; align-items: stretch; gap: 0; width: 100%; max-width: 900px;
+    overflow-x: auto;
+  }
+  .p-stage {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 1.2rem 1rem; position: relative;
+    transition: border-color .3s;
+  }
+  .p-stage:hover { border-color: var(--accent); }
+  .p-stage + .p-stage::before {
+    content: ''; position: absolute; left: -1px; top: 50%;
+    width: 0; height: 0;
+    border-top: 10px solid transparent; border-bottom: 10px solid transparent;
+    border-left: 12px solid var(--border);
+    transform: translateY(-50%); z-index: 1;
+  }
+  .p-stage + .p-stage::after {
+    content: ''; position: absolute; left: 0px; top: 50%;
+    width: 0; height: 0;
+    border-top: 10px solid transparent; border-bottom: 10px solid transparent;
+    border-left: 12px solid var(--surface);
+    transform: translateY(-50%); z-index: 2;
+  }
+  .p-num { font-family: var(--mono); font-size: .65rem; color: var(--text-muted); margin-bottom: .4rem; }
+  .p-name { font-size: .82rem; font-weight: 700; margin-bottom: .3rem; color: var(--text); }
+  .p-desc { font-size: .7rem; color: var(--text-muted); line-height: 1.4; }
+  .p-badge { margin-top: .6rem; align-self: flex-start; }
+  .p-stage.done { border-color: rgba(45,232,176,.3); }
+  .p-stage.done .p-num { color: var(--teal); }
+  .p-stage.hack { border-color: rgba(220,54,192,.3); }
+  .p-stage.hack .p-num { color: var(--accent); }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 4 — O que já temos
+  ───────────────────────────────────────────── */
+  .metric-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; width: 100%; max-width: 900px; }
+  .metric-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 2px;
+    padding: 1.4rem 1.2rem; display: flex; flex-direction: column; gap: .4rem;
+  }
+  .metric-card .m-val { font-family: var(--mono); font-size: clamp(1.4rem,2vw,1.8rem); font-weight: 700; color: var(--teal); }
+  .metric-card .m-label { font-size: .68rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+  .metric-card .m-sub { font-size: .7rem; color: var(--text-dim); margin-top: .2rem; }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 5 — Demo ao vivo
+  ───────────────────────────────────────────── */
+  .terminal {
+    background: #050509; border: 1px solid var(--border); border-radius: 4px;
+    padding: 1.4rem 1.6rem; font-family: var(--mono); font-size: .82rem; line-height: 1.8;
+    width: 100%; max-width: 700px;
+  }
+  .terminal .t-header {
+    display: flex; gap: .4rem; align-items: center; margin-bottom: 1rem;
+    padding-bottom: .8rem; border-bottom: 1px solid var(--border);
+  }
+  .dot-r { width: 10px; height: 10px; border-radius: 50%; background: #f55050; }
+  .dot-y { width: 10px; height: 10px; border-radius: 50%; background: var(--yellow); }
+  .dot-g { width: 10px; height: 10px; border-radius: 50%; background: var(--teal); }
+  .t-line { display: flex; gap: .8rem; }
+  .t-ok { color: var(--teal); }
+  .t-warn { color: var(--yellow); }
+  .t-err { color: var(--red); }
+  .t-muted { color: var(--text-muted); }
+  .t-accent { color: var(--accent); }
+  .t-bold { color: var(--text); font-weight: 700; }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 6 — Insights
+  ───────────────────────────────────────────── */
+  .insight-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; width: 100%; max-width: 900px; }
+  .insight-card {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 1.2rem 1.4rem; display: flex; flex-direction: column; gap: .6rem;
+  }
+  .insight-card .i-num { font-family: var(--mono); font-size: .65rem; color: var(--accent); }
+  .insight-card .i-title { font-size: .9rem; font-weight: 700; color: var(--text); }
+  .insight-card .i-body { font-size: .78rem; color: var(--text-muted); line-height: 1.5; }
+  .insight-card .i-data { font-family: var(--mono); font-size: .72rem; color: var(--teal); margin-top: .2rem; }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 7 — Roadmap
+  ───────────────────────────────────────────── */
+  .roadmap { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6rem; width: 100%; max-width: 900px; }
+  .rm-col { display: flex; flex-direction: column; gap: .8rem; }
+  .rm-title { font-size: .65rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .4rem; }
+  .rm-item { display: flex; gap: .8rem; align-items: flex-start; padding: .8rem 1rem; background: var(--surface); border: 1px solid var(--border); }
+  .rm-item.done { border-color: rgba(45,232,176,.25); }
+  .rm-item.next { border-color: rgba(220,54,192,.25); }
+  .rm-icon { font-size: .9rem; flex-shrink: 0; margin-top: .05rem; }
+  .rm-text { font-size: .8rem; color: var(--text-muted); line-height: 1.4; }
+  .rm-text strong { color: var(--text); font-weight: 600; }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 8 — Métricas de sucesso
+  ───────────────────────────────────────────── */
+  .metric-row { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.2rem; width: 100%; max-width: 800px; }
+  .m-big { background: var(--surface); border: 1px solid var(--border); padding: 1.6rem; display: flex; gap: 1.2rem; align-items: flex-start; }
+  .m-big .m-val { font-family: var(--mono); font-size: clamp(1.6rem,2.5vw,2.2rem); font-weight: 700; color: var(--teal); line-height: 1; flex-shrink: 0; }
+  .m-big .m-info { display: flex; flex-direction: column; gap: .3rem; }
+  .m-big .m-info strong { font-size: .85rem; font-weight: 700; color: var(--text); }
+  .m-big .m-info span { font-size: .75rem; color: var(--text-muted); line-height: 1.4; }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 9 — Depois do hackathon
+  ───────────────────────────────────────────── */
+  .after-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.2rem; width: 100%; max-width: 900px; }
+  .after-card { background: var(--surface); border: 1px solid var(--border); padding: 1.4rem; display: flex; flex-direction: column; gap: .6rem; }
+  .after-card .a-icon { font-size: 1.4rem; }
+  .after-card .a-title { font-size: .88rem; font-weight: 700; color: var(--text); }
+  .after-card .a-body { font-size: .75rem; color: var(--text-muted); line-height: 1.5; }
+
+  /* ─────────────────────────────────────────────
+     SLIDE 10 — Time
+  ───────────────────────────────────────────── */
+  .team-grid { display: flex; gap: 2.5rem; justify-content: center; flex-wrap: wrap; }
+  .team-member { display: flex; flex-direction: column; align-items: center; gap: .8rem; }
+  .avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: var(--surface-2); border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; font-weight: 700; color: var(--text-muted);
+    letter-spacing: -.02em;
+  }
+  .avatar.accent-ring { border-color: var(--accent); }
+  .tm-name { font-size: .85rem; font-weight: 700; color: var(--text); }
+  .tm-role { font-size: .68rem; color: var(--text-muted); text-align: center; max-width: 12ch; line-height: 1.4; }
+  .repo-link {
+    display: inline-flex; align-items: center; gap: .5rem;
+    padding: .6rem 1.2rem; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-muted); font-family: var(--mono); font-size: .75rem;
+    text-decoration: none; margin-top: 1rem; border-radius: 2px;
+    transition: border-color .2s, color .2s;
+  }
+  .repo-link:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ── Keyboard hint ── */
+  #hint {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+    font-size: .65rem; font-family: var(--mono); color: var(--text-dim);
+    letter-spacing: .08em; opacity: 1; transition: opacity .5s;
+  }
+  #hint.hidden { opacity: 0; }
+</style>
+
+<div id="deck">
+
+  <!-- ── SLIDE 1 — TÍTULO ── -->
+  <section class="slide active" id="s1">
+    <div class="title-glow"></div>
+    <div class="title-wrap">
+      <div class="title-meta">
+        <span class="tag">Hackathon Cienty 2026</span>
+        <span class="tag teal">Time 9</span>
+      </div>
+      <h1 class="display">Agente Captura<br><span class="title-accent">WhatsApp</span></h1>
+      <p class="title-sub">Trazer pra dentro da Cienty o canal que hoje vive fora — onde a margem do varejo farma realmente mora.</p>
+      <div class="title-stats">
+        <div class="stat">
+          <span class="stat-n num">79.350</span>
+          <span class="stat-l">EANs no catálogo</span>
+        </div>
+        <div class="stat">
+          <span class="stat-n num">272M</span>
+          <span class="stat-l">linhas de preço real-time</span>
+        </div>
+        <div class="stat">
+          <span class="stat-n num">5/5</span>
+          <span class="stat-l">stages implementados</span>
+        </div>
+        <div class="stat">
+          <span class="stat-n num">13/13</span>
+          <span class="stat-l">testes passando</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 2 — O PROBLEMA ── -->
+  <section class="slide" id="s2">
+    <div class="wide" style="display:grid; grid-template-columns:1fr 1fr; gap:4rem; align-items:center;">
+      <div class="col" style="gap:1.2rem;">
+        <span class="eyebrow">O problema</span>
+        <h2 class="headline">A margem mora fora da Cienty</h2>
+        <p class="body">O representante manda oferta a qualquer hora pelo WhatsApp. O dono da farmácia vê de manhã — a bonificação já expirou.</p>
+        <div style="display:flex; flex-direction:column; gap:.6rem; margin-top:.5rem;">
+          <div class="row">
+            <span style="color:var(--red)">✕</span>
+            <span class="body">Bonificação 1:1 da indústria chega às 22h47</span>
+          </div>
+          <div class="row">
+            <span style="color:var(--red)">✕</span>
+            <span class="body">Dono dorme, vê de manhã, oferta expirou</span>
+          </div>
+          <div class="row">
+            <span style="color:var(--red)">✕</span>
+            <span class="body">Cienty não enxerga nada desse canal</span>
+          </div>
+          <div class="row">
+            <span style="color:var(--red)">✕</span>
+            <span class="body">88% das ofertas chegam como imagem (não texto)</span>
+          </div>
+        </div>
+      </div>
+      <div class="problem-quotes">
+        <div class="quote-bubble">
+          <p class="q-text">"Tudo que estou recebendo é WhatsApp. Hoje praticamente as informações que eu estou recebendo é tudo WhatsApp."</p>
+          <p class="q-meta">— Wagno · Farmaestra, cliente piloto</p>
+        </div>
+        <div class="quote-bubble right">
+          <p class="q-text">✅ SALI.COM.BR DIPIRONA 500MG 24X10 BLISTER COM — Pct R$ 45,16 · Demais estados — Acima 5 pcts = R$ 43,16</p>
+          <p class="q-meta">Eduardo MILFARMA · 16/01 · 15h02</p>
+        </div>
+        <div class="quote-bubble">
+          <p class="q-text">Dom Pedro e Rondon, 3 de cada</p>
+          <p class="q-meta">— Wagno → Paulinho Navarro · oferta fechada off-platform</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 3 — PIPELINE ── -->
+  <section class="slide" id="s3">
+    <div class="wide" style="display:flex;flex-direction:column;gap:2rem;">
+      <div class="col" style="gap:.6rem;">
+        <span class="eyebrow">Arquitetura</span>
+        <h2 class="headline">Cinco stages, do Zap ao alerta</h2>
+      </div>
+      <div class="pipeline">
+        <div class="p-stage done">
+          <span class="p-num">01</span>
+          <span class="p-name">Ingest</span>
+          <span class="p-desc">Webhook SSE/poll · WhatsApp → RawMessage</span>
+          <span class="tag teal p-badge">Pronto</span>
+        </div>
+        <div class="p-stage done">
+          <span class="p-num">02</span>
+          <span class="p-name">Extract</span>
+          <span class="p-desc">LLM + OCR · texto/imagem → schema estruturado</span>
+          <span class="tag teal p-badge">Pronto</span>
+        </div>
+        <div class="p-stage done">
+          <span class="p-num">03</span>
+          <span class="p-name">Normalize</span>
+          <span class="p-desc">Fuzzy match · nome raw → EAN + canonical_name</span>
+          <span class="tag teal p-badge">Pronto</span>
+        </div>
+        <div class="p-stage done">
+          <span class="p-num">04</span>
+          <span class="p-name">Compare</span>
+          <span class="p-desc">vs. preço Cienty real-time · economy_unit_brl</span>
+          <span class="tag teal p-badge">Pronto</span>
+        </div>
+        <div class="p-stage done">
+          <span class="p-num">05</span>
+          <span class="p-name">Deliver</span>
+          <span class="p-desc">Relevance score · alerta formatado no Zap do dono</span>
+          <span class="tag teal p-badge">Pronto</span>
+        </div>
+      </div>
+      <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+        <span class="body" style="font-size:.75rem;">Dados em</span>
+        <code style="font-family:var(--mono);font-size:.72rem;color:var(--teal);">cienty_gold.product_catalog_normalized</code>
+        <span class="body" style="font-size:.75rem;">·</span>
+        <code style="font-family:var(--mono);font-size:.72rem;color:var(--teal);">cienty_silver.whatsapp_offers</code>
+        <span class="body" style="font-size:.75rem;">·</span>
+        <code style="font-family:var(--mono);font-size:.72rem;color:var(--teal);">cienty_gold.offer_comparison</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 4 — INFRA JÁ PRONTA ── -->
+  <section class="slide" id="s4">
+    <div class="wide" style="display:flex;flex-direction:column;gap:2rem;">
+      <div class="col" style="gap:.6rem;">
+        <span class="eyebrow">Infraestrutura</span>
+        <h2 class="headline">O hackathon começa de cima</h2>
+        <p class="subhead" style="font-size:.95rem;">Pré-hack entregue antes do dia 1.</p>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-card">
+          <span class="m-val num">79.350</span>
+          <span class="m-label">EANs no catálogo</span>
+          <span class="m-sub">canonical_name + aliases para fuzzy match</span>
+        </div>
+        <div class="metric-card">
+          <span class="m-val num">272M</span>
+          <span class="m-label">Linhas de preço</span>
+          <span class="m-sub">cienty_silver — real-time, <2min latência</span>
+        </div>
+        <div class="metric-card">
+          <span class="m-val num">13/13</span>
+          <span class="m-label">Testes passando</span>
+          <span class="m-sub">parser + stage 1–5 + relevance scorer</span>
+        </div>
+        <div class="metric-card">
+          <span class="m-val num">3</span>
+          <span class="m-label">CNPJs do piloto</span>
+          <span class="m-sub">Wagno · Farmaestra · Campinas</span>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.8rem; max-width:900px; width:100%;">
+        <div class="card" style="padding:1rem;">
+          <span class="label" style="display:block;margin-bottom:.5rem;">Número WhatsApp Cienty</span>
+          <span class="body" style="font-size:.78rem;">Dedicado + lista de transmissão do Wagno configurada</span>
+        </div>
+        <div class="card" style="padding:1rem;">
+          <span class="label" style="display:block;margin-bottom:.5rem;">Buyer profile</span>
+          <span class="body" style="font-size:.78rem;">YAML com CNPJs + aliases do dono para filtrar noise</span>
+        </div>
+        <div class="card" style="padding:1rem;">
+          <span class="label" style="display:block;margin-bottom:.5rem;">Pipeline rodando</span>
+          <span class="body" style="font-size:.78rem;">Poll mode · Stage 2 LLM ativo · BQ write habilitado</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 5 — DEMO AO VIVO ── -->
+  <section class="slide" id="s5">
+    <div class="wide" style="display:flex;flex-direction:column;gap:1.6rem;">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <div class="col" style="gap:.4rem;">
+          <span class="eyebrow">Demo ao vivo</span>
+          <h2 class="headline">3 alertas reais entregues no Zap</h2>
+        </div>
+        <span class="tag teal" style="font-size:.7rem;padding:.3em .9em;">Pipeline 100% end-to-end ✓</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;width:100%;max-width:900px;">
+        <div style="background:#0d140d;border:1px solid rgba(45,232,176,.3);border-radius:2px;padding:1.1rem 1.2rem;display:flex;flex-direction:column;gap:.5rem;">
+          <div style="display:flex;gap:.5rem;align-items:center;">
+            <span style="font-size:.85rem;">🔴</span>
+            <span style="font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--teal);letter-spacing:.08em;text-transform:uppercase;">URGENT</span>
+          </div>
+          <span style="font-size:.78rem;font-weight:700;color:var(--text);">Eduardo MILFARMA</span>
+          <span style="font-size:.75rem;color:var(--text-muted);line-height:1.4;">Dipirona Nova Química 500Mg c/240</span>
+          <div style="border-top:1px solid rgba(45,232,176,.15);padding-top:.5rem;margin-top:.2rem;">
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;">
+              <span style="color:var(--text-muted);">Oferta</span><span style="color:var(--text);">R$ 30,00/un</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;">
+              <span style="color:var(--text-muted);">Cienty</span><span style="color:var(--teal);">R$ 42,21/un</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.78rem;margin-top:.3rem;">
+              <span style="color:var(--teal);font-weight:700;">Economia</span><span style="color:var(--teal);font-weight:700;">29% · R$ 12,21/un</span>
+            </div>
+          </div>
+        </div>
+        <div style="background:#0d140d;border:1px solid rgba(45,232,176,.3);border-radius:2px;padding:1.1rem 1.2rem;display:flex;flex-direction:column;gap:.5rem;">
+          <div style="display:flex;gap:.5rem;align-items:center;">
+            <span style="font-size:.85rem;">🔴</span>
+            <span style="font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--teal);letter-spacing:.08em;text-transform:uppercase;">URGENT</span>
+          </div>
+          <span style="font-size:.78rem;font-weight:700;color:var(--text);">Daniele Servimed</span>
+          <span style="font-size:.75rem;color:var(--text-muted);line-height:1.4;">Dipirona Nova Química 500Mg c/240</span>
+          <div style="border-top:1px solid rgba(45,232,176,.15);padding-top:.5rem;margin-top:.2rem;">
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;">
+              <span style="color:var(--text-muted);">Oferta</span><span style="color:var(--text);">R$ 38,00/un</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;">
+              <span style="color:var(--text-muted);">Cienty</span><span style="color:var(--teal);">R$ 42,21/un</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.78rem;margin-top:.3rem;">
+              <span style="color:var(--teal);font-weight:700;">Economia</span><span style="color:var(--teal);font-weight:700;">10% · R$ 4,21/un</span>
+            </div>
+          </div>
+        </div>
+        <div style="background:#14080f;border:1px solid rgba(220,54,192,.3);border-radius:2px;padding:1.1rem 1.2rem;display:flex;flex-direction:column;gap:.5rem;">
+          <div style="display:flex;gap:.5rem;align-items:center;">
+            <span style="font-size:.85rem;">🟡</span>
+            <span style="font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;">MELHOR NA CIENTY</span>
+          </div>
+          <span style="font-size:.78rem;font-weight:700;color:var(--text);">Patrícia Nogueira</span>
+          <span style="font-size:.75rem;color:var(--text-muted);line-height:1.4;">Dipirona Nova Química 500Mg c/240</span>
+          <div style="border-top:1px solid rgba(220,54,192,.15);padding-top:.5rem;margin-top:.2rem;">
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;">
+              <span style="color:var(--text-muted);">Rep</span><span style="color:var(--red);">R$ 50,00/un</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;">
+              <span style="color:var(--text-muted);">Cienty</span><span style="color:var(--accent);">R$ 42,21/un ✓</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.78rem;margin-top:.3rem;">
+              <span style="color:var(--accent);font-weight:700;">→ Bater pela Cienty</span><span style="color:var(--accent);font-weight:700;">18% mais barato</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="body" style="font-size:.78rem;max-width:72ch;">Testado ao vivo às 14:58 de hoje. O mesmo produto, 3 distribuidoras, 3 decisões diferentes — o agente classificou corretamente cada uma e entregou as mensagens no WhatsApp real da Cienty.</p>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 6 — INSIGHTS ── -->
+  <section class="slide" id="s6">
+    <div class="wide" style="display:flex;flex-direction:column;gap:1.8rem;">
+      <div class="col" style="gap:.6rem;">
+        <span class="eyebrow">Inteligência real</span>
+        <h2 class="headline">O que aprendemos das conversas do Wagno</h2>
+        <p class="subhead" style="font-size:.88rem;">1.858 mensagens reais analisadas · 2 reps · 20 meses</p>
+      </div>
+      <div class="insight-grid">
+        <div class="insight-card">
+          <span class="i-num">01</span>
+          <span class="i-title">Vision é hoje, não V2</span>
+          <span class="i-body">88% das mensagens do Paulinho Navarro (rep mais ativo) são imagem. Sem OCR o agente está cego para 88% do sinal mais importante.</span>
+          <span class="i-data">12% → 80% de cobertura — entregue hoje, 25/25 testes ✓</span>
+        </div>
+        <div class="insight-card">
+          <span class="i-num">02</span>
+          <span class="i-title">Imagem + caption = uma unidade</span>
+          <span class="i-body">A foto da tabela chega junto com "$9,69" e "Limitado 60un SP" em 3 mensagens consecutivas. Precisam ser fundidas num evento só.</span>
+          <span class="i-data">Padrão recorrente em 100% das campanhas do Paulinho</span>
+        </div>
+        <div class="insight-card">
+          <span class="i-num">03</span>
+          <span class="i-title">Fechamento off-platform</span>
+          <span class="i-body">"Dom Pedro e Rondon, 3 de cada" → "Ok! Vlw!" — pedido fechado pelo Zap, fora da Cienty. Capturando DEAL_CLOSED: closed-loop tracking real.</span>
+          <span class="i-data">Navarro: R$ 10.367 na Cienty mas compra mais no Zap</span>
+        </div>
+        <div class="insight-card">
+          <span class="i-num">04</span>
+          <span class="i-title">3 distribuidoras priority</span>
+          <span class="i-body">Navarro · Medbras · Milfarma têm mais sinal off-platform que qualquer outra. Navarro já está na Cienty mas ainda vende pelo Zap.</span>
+          <span class="i-data">Medbras + Milfarma = próximas a integrar</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 7 — ROADMAP ── -->
+  <section class="slide" id="s7">
+    <div class="wide" style="display:flex;flex-direction:column;gap:2rem;">
+      <div class="col" style="gap:.6rem;">
+        <span class="eyebrow">Roadmap</span>
+        <h2 class="headline">V1 entregue. V2 já mapeado.</h2>
+      </div>
+      <div class="roadmap">
+        <div class="rm-col">
+          <p class="rm-title">V1 — Hackathon (hoje)</p>
+          <div class="rm-item done"><span class="rm-icon">✅</span><div class="rm-text"><strong>Stage 1–5 completo</strong> · ingest → extract → normalize → compare → alert</div></div>
+          <div class="rm-item done"><span class="rm-icon">✅</span><div class="rm-text"><strong>79.350 EANs</strong> · catálogo normalizado com aliases</div></div>
+          <div class="rm-item done"><span class="rm-icon">✅</span><div class="rm-text"><strong>Relevance scoring</strong> · 5 bandas + CIENTY_BETTER</div></div>
+          <div class="rm-item done"><span class="rm-icon">✅</span><div class="rm-text"><strong>Buyer profile</strong> · CNPJs do Wagno + aliases</div></div>
+          <div class="rm-item done"><span class="rm-icon">✅</span><div class="rm-text"><strong>Pipeline ao vivo</strong> · número Cienty + Wagno conectado</div></div>
+        </div>
+        <div class="rm-col">
+          <p class="rm-title">V2 — Próximas sprints</p>
+          <div class="rm-item done"><span class="rm-icon">✅</span><div class="rm-text"><strong>Vision (Stage 2)</strong> · 12% → 80% cobertura · entregue hoje</div></div>
+          <div class="rm-item next"><span class="rm-icon">🔮</span><div class="rm-text"><strong>Direction expansion</strong> · negotiation + logistics + deal_closed</div></div>
+          <div class="rm-item next"><span class="rm-icon">🔮</span><div class="rm-text"><strong>Áudio (Whisper)</strong> · 42 áudios do Paulinho desbloqueados</div></div>
+          <div class="rm-item next"><span class="rm-icon">🔮</span><div class="rm-text"><strong>Rep entity resolution</strong> · distribuidora, não contato</div></div>
+          <div class="rm-item next"><span class="rm-icon">🔮</span><div class="rm-text"><strong>DEAL_CLOSED → silver.transactions</strong> · GMV off-platform real</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 8 — MÉTRICAS ── -->
+  <section class="slide" id="s8">
+    <div class="wide" style="display:flex;flex-direction:column;gap:2rem;">
+      <div class="col" style="gap:.6rem;">
+        <span class="eyebrow">Como medimos sucesso</span>
+        <h2 class="headline">Quatro números decidem se funciona</h2>
+      </div>
+      <div class="metric-row">
+        <div class="m-big">
+          <span class="m-val num">&gt;85%</span>
+          <div class="m-info">
+            <strong>Extração correta</strong>
+            <span>campos certos em mensagens estruturadas (texto + PDF)</span>
+          </div>
+        </div>
+        <div class="m-big">
+          <span class="m-val num">&lt;2min</span>
+          <div class="m-info">
+            <strong>Latência</strong>
+            <span>do recebimento à classificação em silver.whatsapp_offers</span>
+          </div>
+        </div>
+        <div class="m-big">
+          <span class="m-val num">R$</span>
+          <div class="m-info">
+            <strong>Economia identificada</strong>
+            <span>soma de economy_unit_brl × qty em ofertas urgentes</span>
+          </div>
+        </div>
+        <div class="m-big">
+          <span class="m-val num">0</span>
+          <div class="m-info">
+            <strong>Falsos positivos críticos</strong>
+            <span>alertas de oferta mais cara que Cienty → não incomodar</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 9 — DEPOIS DO HACKATHON ── -->
+  <section class="slide" id="s9">
+    <div class="wide" style="display:flex;flex-direction:column;gap:2rem;">
+      <div class="col" style="gap:.6rem;">
+        <span class="eyebrow">Visão de produto</span>
+        <h2 class="headline">Um agente hoje. Um moat amanhã.</h2>
+      </div>
+      <div class="after-grid">
+        <div class="after-card">
+          <span class="a-icon">🧠</span>
+          <span class="a-title">Feeder do Agente Comprador</span>
+          <span class="a-body">O feed estruturado de ofertas é exatamente o que o Agente Comprador consome. Não é beco — é o primeiro tijolo do cérebro acima de todos os canais.</span>
+        </div>
+        <div class="after-card">
+          <span class="a-icon">📊</span>
+          <span class="a-title">Inteligência de mercado única</span>
+          <span class="a-body">Agregando sinal de todos os clientes: sabemos o preço real de cada distribuidor em cada região antes de qualquer concorrente.</span>
+        </div>
+        <div class="after-card">
+          <span class="a-icon">🔒</span>
+          <span class="a-title">GMV off-platform → dentro</span>
+          <span class="a-body">Capturando DEAL_CLOSED: sabemos o que cada farmácia comprou de cada rep pelo Zap. Dado que a indústria farma inteira gostaria de ter.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 10 — TIME ── -->
+  <section class="slide" id="s10">
+    <div class="wide center" style="display:flex;flex-direction:column;gap:2.5rem;align-items:center;">
+      <div class="col center" style="gap:.6rem;">
+        <span class="eyebrow">Time 9</span>
+        <h2 class="headline">Agente Captura WhatsApp</h2>
+        <p class="subhead" style="text-align:center;">Hackathon Cienty 2026</p>
+      </div>
+      <div class="team-grid">
+        <div class="team-member">
+          <div class="avatar accent-ring">WC</div>
+          <span class="tm-name">Weslei Camargo</span>
+          <span class="tm-role">Data Engineering · Stages 3 & 4</span>
+        </div>
+        <div class="team-member">
+          <div class="avatar accent-ring">MR</div>
+          <span class="tm-name">Miriam Yokoyama</span>
+          <span class="tm-role">Product · Stages 1, 2 & 5</span>
+        </div>
+        <div class="team-member">
+          <div class="avatar">TO</div>
+          <span class="tm-name">Thiago Oliveira</span>
+          <span class="tm-role">Tech Lead · Bridge & Infra</span>
+        </div>
+        <div class="team-member">
+          <div class="avatar">DF</div>
+          <span class="tm-name">David Fadel</span>
+          <span class="tm-role">Comercial · Visão de negócio</span>
+        </div>
+        <div class="team-member">
+          <div class="avatar">LN</div>
+          <span class="tm-name">Luciano Naganawa</span>
+          <span class="tm-role">Time 9</span>
+        </div>
+      </div>
+      <a class="repo-link" href="https://github.com/covalenty/hackaton-grupo-9" target="_blank">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        github.com/covalenty/hackaton-grupo-9
+      </a>
+    </div>
+  </section>
+
+</div>
+
+<!-- dots -->
+<div id="dots"></div>
+<div id="progress"></div>
+<div id="counter"></div>
+<div id="hint">← → navegar · espaço avançar</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dotsEl = document.getElementById('dots');
+  const progressEl = document.getElementById('progress');
+  const counterEl = document.getElementById('counter');
+  const hintEl = document.getElementById('hint');
+  let current = 0;
+  let hintTimer;
+
+  // build dots
+  slides.forEach((_, i) => {
+    const d = document.createElement('button');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.setAttribute('aria-label', `Slide ${i+1}`);
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  });
+
+  function goTo(n) {
+    if (n < 0 || n >= slides.length) return;
+    const prev = slides[current];
+    prev.classList.remove('active');
+    prev.classList.add('exit');
+    setTimeout(() => prev.classList.remove('exit'), 500);
+
+    current = n;
+    slides[current].classList.add('active');
+
+    dotsEl.querySelectorAll('.dot').forEach((d,i) => d.classList.toggle('active', i === current));
+    progressEl.style.width = ((current+1)/slides.length*100) + '%';
+    counterEl.textContent = `${String(current+1).padStart(2,'0')} / ${String(slides.length).padStart(2,'0')}`;
+
+    // hide hint after first nav
+    clearTimeout(hintTimer);
+    hintEl.classList.add('hidden');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); goTo(current+1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); goTo(current-1); }
+  });
+
+  // swipe support
+  let touchX = 0;
+  document.addEventListener('touchstart', e => touchX = e.touches[0].clientX, {passive:true});
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1));
+  });
+
+  // init
+  progressEl.style.width = (1/slides.length*100) + '%';
+  counterEl.textContent = `01 / ${String(slides.length).padStart(2,'0')}`;
+  hintTimer = setTimeout(() => hintEl.classList.add('hidden'), 4000);
+</script>
