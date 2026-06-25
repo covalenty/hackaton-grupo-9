@@ -9,3 +9,7 @@ venv/
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl
+
+# Stage 2 extraction artifacts
+.cache/
+runs/
