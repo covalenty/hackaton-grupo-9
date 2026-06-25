@@ -51,6 +51,8 @@ def run(extraction: dict, bq_client: bigquery.Client) -> dict:
         "bonus_qty":            extraction.get("bonus_qty"),
         "min_qty":              extraction.get("min_qty"),
         "deadline":             extraction.get("deadline"),
+        "direction":            extraction.get("direction", "rep_offer"),
+        "requested_qty":        extraction.get("requested_qty"),
         "ean_matched":          match.ean_matched,
         "canonical_name":       match.canonical_name,
         "confidence_score":     match.confidence_score,
