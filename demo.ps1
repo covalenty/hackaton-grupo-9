@@ -48,8 +48,23 @@ $ErrorActionPreference = "Stop"
 $here = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $py = Join-Path $here ".venv\Scripts\python.exe"
 
-if (-not (Test-Path $py)) {
-    Write-Error "Python venv não encontrado em $py. Rodar: uv venv --python 3.12 ; uv pip install -r agent/requirements.txt"
+function Test-PythonVenv {
+    if (-not (Test-Path $py)) { return $false }
+    try { & $py --version 2>&1 | Out-Null; return ($LASTEXITCODE -eq 0) } catch { return $false }
+}
+
+if (-not (Test-PythonVenv)) {
+    Write-Host "[demo] venv inválido — recriando (uv GC pode ter removido o Python base)..."
+    $uv = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe\uv.exe"
+    if (-not (Test-Path $uv)) { Write-Error "uv não encontrado. winget install astral-sh.uv" }
+    Push-Location $here
+    Remove-Item -Recurse -Force .venv -ErrorAction SilentlyContinue
+    & $uv python install 3.12 2>&1 | Out-Null
+    & $uv venv --python 3.12 --quiet
+    & $uv pip install -r agent/requirements.txt pillow --python .venv\Scripts\python.exe --quiet 2>&1 | Out-Null
+    Pop-Location
+    if (-not (Test-PythonVenv)) { Write-Error "Falha ao recriar venv. Rodar manualmente os comandos uv." }
+    Write-Host "[demo] venv recriado · " -NoNewline; & $py --version
 }
 
 if (-not $env:ANTHROPIC_API_KEY) {
